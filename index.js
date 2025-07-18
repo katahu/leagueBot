@@ -59,7 +59,7 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => mainWindow.show())
   mainWindow.loadFile("index.html")
   mainWindow.setMenuBarVisibility(false)
-  mainWindow.webContents.openDevTools({ mode: "detach" })
+  // mainWindow.webContents.openDevTools({ mode: "detach" })
 
   createGameView()
   setupWindowEvents()
@@ -73,7 +73,7 @@ function createGameView() {
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, "inject-preload.js"),
-      // partition: "persist:gamebot",
+      partition: "persist:gamebot",
       sandbox: true,
     },
   })
@@ -82,7 +82,7 @@ function createGameView() {
   resizeGameView()
 
   gameView.webContents.loadURL("https://game.league17.ru/")
-  gameView.webContents.openDevTools({ mode: "detach" })
+  // gameView.webContents.openDevTools({ mode: "detach" })
 
   // Безопасная навигация
   gameView.webContents.setWindowOpenHandler(({ url }) => {
@@ -108,7 +108,7 @@ function createGameView() {
 }
 
 // ============================================================================
-// 📤 Внедрение CSS и JS
+// Внедрение CSS и JS
 // ============================================================================
 async function injectBundleCSS() {
   try {
@@ -129,7 +129,7 @@ async function injectBundleJS() {
 }
 
 // ============================================================================
-// 🎛️ Обработчики событий окна
+// Обработчики событий окна
 // ============================================================================
 function setupWindowEvents() {
   mainWindow.on("resize", resizeGameView)
@@ -156,7 +156,7 @@ function resizeGameView() {
 }
 
 // ============================================================================
-// 🎹 Глобальные горячие клавиши
+// Глобальные горячие клавиши
 // ============================================================================
 function registerGlobalShortcuts() {
   globalShortcut.register("F5", () => {
@@ -167,7 +167,7 @@ function registerGlobalShortcuts() {
 }
 
 // ============================================================================
-// 🖼️ Трей
+//  Трей
 // ============================================================================
 function setupTray() {
   tray = new Tray(path.join(__dirname, "console.png"))
