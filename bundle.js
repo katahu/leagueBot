@@ -1,14 +1,14 @@
 const arrTarget = [
-  "Вы уверены, что хотите сдаться?",
-  "Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?",
-  "Вы хотите вернуться на локацию, из которой вы переместились на арену?",
+  'Вы уверены, что хотите сдаться?',
+  'Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?',
+  'Вы хотите вернуться на локацию, из которой вы переместились на арену?',
 ]
 
 ;(function () {
   window.__originalConfirm = window.confirm
   window.useCustomConfirm = false
 
-  window.addEventListener("toggleConfirmInterceptor", (event) => {
+  window.addEventListener('toggleConfirmInterceptor', (event) => {
     window.useCustomConfirm = event.detail.enabled
   })
 
@@ -23,7 +23,7 @@ const arrTarget = [
 // Локации постоянные
 ;(() => {
   const pendingRequests = new Map() // url -> { resolve, timeoutId }
-  const alwaysListenUrl = "/do/loc/go" // URL для постоянного мониторинга
+  const alwaysListenUrl = '/do/loc/go' // URL для постоянного мониторинга
 
   function waitForRequest(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ const arrTarget = [
   }
 
   XMLHttpRequest.prototype.send = function (body) {
-    this.addEventListener("load", () => {
+    this.addEventListener('load', () => {
       try {
         if (!this.responseText) return
         const json = JSON.parse(this.responseText)
@@ -76,11 +76,11 @@ const arrTarget = [
           if (locId !== undefined) {
             window.postMessage(
               {
-                type: "LOC_ID_UPDATE",
+                type: 'LOC_ID_UPDATE',
                 locId: locId,
                 fullData: json,
               },
-              "*"
+              '*'
             )
           }
         }
@@ -92,32 +92,32 @@ const arrTarget = [
   }
 
   // Обработка сообщений от контент-скрипта
-  window.addEventListener("message", async (event) => {
+  window.addEventListener('message', async (event) => {
     if (event.source !== window) return
 
-    if (event.data.type === "WAIT_FOR_REQUEST" && typeof event.data.url === "string") {
+    if (event.data.type === 'WAIT_FOR_REQUEST' && typeof event.data.url === 'string') {
       try {
         const data = await waitForRequest(event.data.url, event.data.timeout)
         window.postMessage(
           {
-            type: "REQUEST_RESOLVED",
-            source: "XHR_MONITOR",
+            type: 'REQUEST_RESOLVED',
+            source: 'XHR_MONITOR',
             requestId: event.data.requestId,
             url: event.data.url,
             response: data,
           },
-          "*"
+          '*'
         )
       } catch (error) {
         window.postMessage(
           {
-            type: "REQUEST_TIMEOUT",
-            source: "XHR_MONITOR",
+            type: 'REQUEST_TIMEOUT',
+            source: 'XHR_MONITOR',
             requestId: event.data.requestId,
             url: event.data.url,
             error: error.message,
           },
-          "*"
+          '*'
         )
       }
     }
@@ -139,8 +139,8 @@ const arrTarget = [
   XMLHttpRequest.prototype.send = function (body) {
     if (!active) return origSend.apply(this, arguments)
 
-    if (this._url && this._url.includes("/do/loc/load")) {
-      this.addEventListener("load", function () {
+    if (this._url && this._url.includes('/do/loc/load')) {
+      this.addEventListener('load', function () {
         if (!active) return
 
         try {
@@ -149,16 +149,16 @@ const arrTarget = [
           // Вызываем внешнюю функцию, объявленную в content script
           window.postMessage(
             {
-              type: "init-data",
+              type: 'init-data',
               ...responseJSON,
             },
-            "*"
+            '*'
           )
 
           // Отключаем перехват
           active = false
         } catch (e) {
-          console.warn("[XHR Interceptor] Ошибка разбора:", e)
+          console.warn('[XHR Interceptor] Ошибка разбора:', e)
         }
       })
     }
@@ -180,21 +180,22 @@ function toggleConfirmInterceptor(enabled) {
 }
 
 function showNotification(title, text) {
+  // Если это Android WebView, ничего не делать (выходим)
+  if (window.AndroidInterface) {
+    return
+  }
+
   if (Notification.permission === "granted") {
-    new Notification(title, {
-      body: text,
-    })
+    new Notification(title, { body: text })
   } else if (Notification.permission !== "denied") {
-    // запрос разрешения
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
-        new Notification(title, {
-          body: text,
-        })
+        new Notification(title, { body: text })
       }
     })
   }
 }
+
 function waitForXHR(url, timeout = 10000) {
   return new Promise((resolve, reject) => {
     const requestId = Date.now() + Math.random()
@@ -232,10 +233,10 @@ function waitForXHR(url, timeout = 10000) {
 
 // Обновить на новую версию:
 // git add .
-// git commit -m "Release v1.0.4"
+// git commit -m "Release v1.0.2"
 // git push origin main
-// git tag v1.0.4
-// git push origin v1.0.4
+// git tag v1.0.2
+// git push origin v1.0.2
 const arrMonstersAll = [
   "Жаблиф",
   "Жабзор",
@@ -1325,6 +1326,7 @@ class SettingsManager {
   constructor() {
     this.settings = {}
     this.initialized = false
+    this.volatileKeys = new Set()
   }
 
   getFromStorage(key, defaultValue) {
@@ -1348,7 +1350,9 @@ class SettingsManager {
     if (this.initialized) return this.settings
 
     for (const [key, defaultValue] of Object.entries(DEFAULT_VALUES)) {
-      this.settings[key] = this.getFromStorage(key, defaultValue)
+      if (!this.volatileKeys.has(key)) {
+        this.settings[key] = this.getFromStorage(key, defaultValue)
+      }
     }
 
     this.initialized = true
@@ -1358,13 +1362,8 @@ class SettingsManager {
   get(key, defaultValue) {
     if (!this.initialized) this.init()
 
-    const value = this.settings[key]
-
-    if (defaultValue !== undefined && (!value || value === "")) {
-      return defaultValue
-    }
-
-    return value
+    if (key in this.settings) return this.settings[key]
+    return defaultValue
   }
 
   set(key, value, saveToStorage = true) {
@@ -1374,12 +1373,21 @@ class SettingsManager {
 
     if (saveToStorage) {
       this.setToStorage(key, value)
+    } else {
+      this.volatileKeys.add(key) // ← автоматическая регистрация volatile ключа
     }
   }
 
-  getAll() {
+  get(key, defaultValue) {
     if (!this.initialized) this.init()
-    return { ...this.settings }
+
+    const value = this.settings[key]
+
+    if (value === undefined || value === null || value === "") {
+      return defaultValue
+    }
+
+    return value
   }
 
   saveCategoryToStorage(nameCategory, allMonsters) {
@@ -1413,14 +1421,17 @@ class SettingsManager {
   createReactiveSettings() {
     if (!this.initialized) this.init()
 
+    const allKeys = new Set([...Object.keys(DEFAULT_VALUES), ...this.volatileKeys])
+
     const reactive = {}
-    for (const key of Object.keys(DEFAULT_VALUES)) {
+    for (const key of allKeys) {
       Object.defineProperty(reactive, key, {
         get: () => this.get(key),
         set: (value) => this.set(key, value),
         enumerable: true,
       })
     }
+
     return reactive
   }
 }
@@ -1508,17 +1519,16 @@ class CheckBox extends Button {
 
     this.el.addEventListener("click", (e) => {
       e.stopPropagation()
-
       this.input.checked = !this.input.checked
       this.input.dispatchEvent(new Event("change"))
     })
 
     this.input.addEventListener("change", () => {
       if (options.storage) {
-        settings.set(options.storage, this.input.checked, false)
+        settings.set(options.storage, this.input.checked, !options.disable)
       }
 
-      if (this.input.checked === true && options.onChange) {
+      if (options.onChange) {
         options.onChange()
       }
     })
@@ -2362,26 +2372,15 @@ const menuOther = new Menu({
       text: "Антибот",
       onClick: () => menuAntiBot.open(),
     },
-
     {
       icon: "fa-light icons-repeat",
       text: "Автоинвентарь",
       onClick: () => menuAutoItems.open(),
     },
     {
-      icon: "fa-light icons-route",
-      text: "Маршрут для лечения",
-      onClick: () => {
-        const modal = new CreateHeal()
-        modal.createMenu()
-        modalManager.register(modal)
-      },
-    },
-
-    {
-      type: "checkbox",
-      text: "Лечиться через арену ЛЧ",
-      storage: "tourHealEnabled",
+      icon: "fa-light icons-clipboard-medical",
+      text: "Лечение",
+      onClick: () => menuHeal.open(),
     },
   ],
 })
@@ -2512,6 +2511,27 @@ const menuAutoItems = new Menu({
     },
   ],
 })
+
+const menuHeal = new Menu({
+  title: "Настройки лечения",
+  items: [
+    {
+      icon: "fa-light icons-route",
+      text: "Маршрут для лечения",
+      onClick: () => {
+        const modal = new CreateHeal()
+        modal.createMenu()
+        modalManager.register(modal)
+      },
+    },
+    {
+      type: "checkbox",
+      text: "Лечиться через арену ЛЧ",
+      storage: "tourHealEnabled",
+    },
+  ],
+})
+
 const menuButtons = new Button([
   {
     icon: "fa-light icons-fight",
@@ -2564,6 +2584,11 @@ const menuButtons = new Button([
     text: "Дроп",
     onClick: () => containerDrop.classList.toggle("open"),
   },
+  // {
+  //   icon: "fa-light icons-fight",
+  //   text: "Для яда",
+  //   onClick: () => new Tester().execute(),
+  // },
 ])
 
 const btnToggle = document.createElement("div")
@@ -2588,31 +2613,31 @@ mainMenu.append(containerDrop)
 document.body.append(btnToggle, mainMenu)
 class ThemeController {
   constructor() {
-    this.systemTheme = settings.getFromStorage("systemTheme", false)
+    this.systemTheme = settings.getFromStorage('systemTheme', false)
     this.nowTheme = null
   }
 
   init() {
     if (!this.systemTheme) {
-      this.nowTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      settings.setToStorage("themeMode", true)
-      settings.setToStorage("theme", this.nowTheme)
+      this.nowTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      settings.setToStorage('themeMode', true)
+      settings.setToStorage('theme', this.nowTheme)
     } else {
-      this.nowTheme = settings.getFromStorage("theme")
+      this.nowTheme = settings.getFromStorage('theme')
     }
 
     this.setTheme(this.nowTheme)
   }
 
   setTheme(theme) {
-    document.body.classList.remove("theme-light", "theme-dark")
+    document.body.classList.remove('theme-light', 'theme-dark')
     document.body.classList.add(`theme-${theme}`)
-    settings.setToStorage("theme", theme)
+    settings.setToStorage('theme', theme)
     this.nowTheme = theme
   }
 
   toggleTheme() {
-    const newTheme = this.nowTheme === "dark" ? "light" : "dark"
+    const newTheme = this.nowTheme === 'dark' ? 'light' : 'dark'
     this.setTheme(newTheme)
   }
 }
@@ -2914,7 +2939,6 @@ class HealAction {
     arrCapture.length = 0
     openTeam.click()
   }
-
   async waitMenuTeam() {
     const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
     return this.observer.observe(
@@ -3087,7 +3111,7 @@ class AvtoItemAction {
     }
   }
 }
-// Если будет 1.570 или другой с точкой, будет баг в виде Кредит.570 x1.57
+// Глобальный наблюдение за divAlerten
 
 class DropController {
   constructor() {
@@ -3226,7 +3250,7 @@ class GameUtils {
   }
   static async btnWild(isActive) {
     //false отключить, true включить
-    const btn = document.querySelector("#divInputButtons .btnSwitchWilds")
+    const btn = document.querySelector("#divInputButtons .btnSwitchWilds") || document.querySelector("#divDockUpper .btnSwitchWilds")
     if (isActive && !btn.classList.contains("pressed")) return btn.click()
     if (isActive && btn.classList.contains("pressed")) return
     if (!isActive && btn.classList.contains("pressed")) return btn.click()
@@ -3502,7 +3526,7 @@ class LevelUpAction {
   async execute() {
     while (BattleState.isBattleActive() && this.attempts < this.maxAttempts) {
       if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
-      if (this.enemy.lvl >= +settings.get("maxHighLvl", 1000)) return BattleState.handleCriticalSituation()
+      if (this.enemy.lvl >= +settings.get("maxHighLvl", 101)) return BattleState.handleCriticalSituation()
 
       const result = this.manager.findAttack(settings.get("attackUp"))
 
@@ -3551,7 +3575,14 @@ class LevelUpAction {
   }
 
   findMonster() {
+    if (!+settings.get("monsterUp")) {
+      soundController.play("shine")
+      showNotification("Прокачать", "Указанного монстра с собой нет")
+      return false
+    }
+
     const numberMonster = this.data.object.findIndex((m) => m.id === +settings.get("monsterUp").replace(/[^\d]/g, ""))
+
     if (!numberMonster) {
       soundController.play("shine")
       showNotification("Прокачать", "Указанного монстра с собой нет")
@@ -4150,6 +4181,93 @@ class BattleBot {
 }
 const bot = new BattleBot()
 ///
+
+// class Tester {
+//   constructor() {
+//     this.observer = new BattleObserver()
+//   }
+//   async execute() {
+//     while (true) {
+//       let btnOpen = null
+//       let monsters = null
+//       btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+//       btnOpen.click()
+
+//       btnOpen.classList.remove("active")
+//       document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+//       await this.waitMenuTeam()
+
+//       monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+//       for (const el of monsters) {
+//         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "17368244") {
+//           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+//           const response = waitForXHR("/do/fight/switche")
+//           btnSet?.click()
+//           await response
+//           break
+//         }
+//       }
+
+//       if (!BattleState.isBattleActive()) return console.log("конец боя")
+
+//       btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+//       btnOpen.click()
+
+//       btnOpen.classList.remove("active")
+//       document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+//       await this.waitMenuTeam()
+
+//       monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+//       for (const el of monsters) {
+//         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "9824501") {
+//           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+//           const response = waitForXHR("/do/fight/switche")
+//           btnSet?.click()
+//           await response
+//           break
+//         }
+//       }
+//       if (!BattleState.isBattleActive()) return console.log("конец боя")
+//     }
+//   }
+//   async waitMenuTeam() {
+//     const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
+//     return this.observer.observe(
+//       "waitTeam",
+//       menuTeam,
+//       { childList: true },
+//       (mutation) => mutation.type === "childList" && mutation.addedNodes.length > 0
+//     )
+//   }
+//   async setMonster() {
+//     const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+//     btnOpen.click()
+
+//     btnOpen.classList.remove("active")
+//     document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+//     await this.waitMenuTeam()
+
+//     const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+//     for (const el of monsters) {
+//       if (
+//         el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+//         settings.get("monsterCapture").replace(/[^\d]/g, "")
+//       ) {
+//         const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+//         const response = waitForXHR("/do/fight/switche")
+//         btnSet?.click()
+//         if (!btnSet) return true
+//         await response
+//         this.tauntCounter++
+//         return true
+//       }
+//     }
+
+//     soundController.play("shine")
+//     showNotification("Поймать", "Монстр для поимки отсутствует")
+//     return false
+//   }
+// }
 let meName = null
 
 class SoundController {
@@ -4338,7 +4456,6 @@ class MessageManager {
   }
 }
 
-///
 let autoItem = null
 
 const start = (async () => {
@@ -4346,6 +4463,7 @@ const start = (async () => {
   const observer = new MutationObserver(() => {
     if (body.classList.contains("game")) {
       if (settings.get("antiBotEnable") === true) new MessageManager().start()
+
       autoItem = new AvtoItemAction()
     }
   })
@@ -4371,7 +4489,16 @@ class CreateHeal {
 
     const header = document.createElement("div")
     header.classList.add("menu-header")
-    header.textContent = "Создание маршрута"
+
+    const textTitle = document.createElement("span")
+    textTitle.classList.add("header-title")
+    textTitle.textContent = "Создание маршрута"
+
+    const xMark = document.createElement("i")
+    xMark.classList.add("fa-light", "icons-xmark")
+    xMark.addEventListener("click", () => {
+      this.close()
+    })
 
     const separator = document.createElement("div")
     separator.classList.add("hr")
@@ -4381,7 +4508,7 @@ class CreateHeal {
 
     const text = document.createElement("div")
     text.classList.add("menu-text")
-    text.textContent = `Для создания маршрута нажмите «Текущая локация». Начните с текущей позиции и последовательно отмечайте все локации маршрута, включая монстроцентр. Закрыть можно только клавишей ESC.`
+    text.textContent = `Для создания маршрута нажмите «Текущая локация». Начните с текущей позиции и последовательно отмечайте все локации маршрута, включая монстроцентр.`
 
     this.category = document.createElement("div")
     this.category.classList.add("category-content", "custom-scroll")
@@ -4445,6 +4572,7 @@ class CreateHeal {
     })
 
     this.el.append(menu)
+    header.append(textTitle, xMark)
     menu.append(header, separator, menuContent)
     menuContent.append(text, this.category, btnLocal.el, saveRoute.el, allRoutes.el, deleteRoute.el)
     document.body.append(this.el)
@@ -4611,58 +4739,3 @@ class RouterViewHeal {
     })
   }
 }
-
-//  [
-//         "btnGo574",
-//         "btnGo566",
-//         "btnGo567"
-//     ],
-
-//  [
-//   "btnGo720",
-//         "btnGo574",
-//         "btnGo566",
-//         "btnGo567"
-//     ],
-
-//  [
-//   "btnGo721",
-//   "btnGo720",
-//         "btnGo574",
-//         "btnGo566",
-//         "btnGo567"
-//     ],
-//  [
-//   "btnGo722",
-//   "btnGo721",
-//   "btnGo720",
-//         "btnGo574",
-//         "btnGo566",
-//         "btnGo567"
-//     ],
-// ["btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo580", "btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo582", "btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo583", "btnGo582", "btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo591", "btnGo583", "btnGo582", "btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo632", "btnGo583", "btnGo582", "btnGo581", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo578", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo579", "btnGo578", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo592", "btnGo609", "btnGo611"],
-// ["btnGo601", "btnGo599", "btnGo598", "btnGo592", "btnGo609", "btnGo611"]  ,  // после этого нужен яхта
-
-// ["btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo1133", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo1134", "btnGo1133", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo1135", "btnGo1134", "btnGo1133", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo659", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo586", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo588", "btnGo586", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo590", "btnGo588", "btnGo586", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"],
-// ["btnGo769", "btnGo588", "btnGo586", "btnGo585", "btnGo577", "btnGo576", "btnGo575", "btnGo574", "btnGo566", "btnGo567"]
-
-// 601 - 611
