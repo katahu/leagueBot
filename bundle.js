@@ -1,14 +1,14 @@
 const arrTarget = [
-  'Вы уверены, что хотите сдаться?',
-  'Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?',
-  'Вы хотите вернуться на локацию, из которой вы переместились на арену?',
+  "Вы уверены, что хотите сдаться?",
+  "Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?",
+  "Вы хотите вернуться на локацию, из которой вы переместились на арену?",
 ]
 
 ;(function () {
   window.__originalConfirm = window.confirm
   window.useCustomConfirm = false
 
-  window.addEventListener('toggleConfirmInterceptor', (event) => {
+  window.addEventListener("toggleConfirmInterceptor", (event) => {
     window.useCustomConfirm = event.detail.enabled
   })
 
@@ -23,7 +23,7 @@ const arrTarget = [
 // Локации постоянные
 ;(() => {
   const pendingRequests = new Map() // url -> { resolve, timeoutId }
-  const alwaysListenUrl = '/do/loc/go' // URL для постоянного мониторинга
+  const alwaysListenUrl = "/do/loc/go" // URL для постоянного мониторинга
 
   function waitForRequest(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ const arrTarget = [
   }
 
   XMLHttpRequest.prototype.send = function (body) {
-    this.addEventListener('load', () => {
+    this.addEventListener("load", () => {
       try {
         if (!this.responseText) return
         const json = JSON.parse(this.responseText)
@@ -76,11 +76,11 @@ const arrTarget = [
           if (locId !== undefined) {
             window.postMessage(
               {
-                type: 'LOC_ID_UPDATE',
+                type: "LOC_ID_UPDATE",
                 locId: locId,
                 fullData: json,
               },
-              '*'
+              "*"
             )
           }
         }
@@ -92,32 +92,32 @@ const arrTarget = [
   }
 
   // Обработка сообщений от контент-скрипта
-  window.addEventListener('message', async (event) => {
+  window.addEventListener("message", async (event) => {
     if (event.source !== window) return
 
-    if (event.data.type === 'WAIT_FOR_REQUEST' && typeof event.data.url === 'string') {
+    if (event.data.type === "WAIT_FOR_REQUEST" && typeof event.data.url === "string") {
       try {
         const data = await waitForRequest(event.data.url, event.data.timeout)
         window.postMessage(
           {
-            type: 'REQUEST_RESOLVED',
-            source: 'XHR_MONITOR',
+            type: "REQUEST_RESOLVED",
+            source: "XHR_MONITOR",
             requestId: event.data.requestId,
             url: event.data.url,
             response: data,
           },
-          '*'
+          "*"
         )
       } catch (error) {
         window.postMessage(
           {
-            type: 'REQUEST_TIMEOUT',
-            source: 'XHR_MONITOR',
+            type: "REQUEST_TIMEOUT",
+            source: "XHR_MONITOR",
             requestId: event.data.requestId,
             url: event.data.url,
             error: error.message,
           },
-          '*'
+          "*"
         )
       }
     }
@@ -139,8 +139,8 @@ const arrTarget = [
   XMLHttpRequest.prototype.send = function (body) {
     if (!active) return origSend.apply(this, arguments)
 
-    if (this._url && this._url.includes('/do/loc/load')) {
-      this.addEventListener('load', function () {
+    if (this._url && this._url.includes("/do/loc/load")) {
+      this.addEventListener("load", function () {
         if (!active) return
 
         try {
@@ -149,16 +149,16 @@ const arrTarget = [
           // Вызываем внешнюю функцию, объявленную в content script
           window.postMessage(
             {
-              type: 'init-data',
+              type: "init-data",
               ...responseJSON,
             },
-            '*'
+            "*"
           )
 
           // Отключаем перехват
           active = false
         } catch (e) {
-          console.warn('[XHR Interceptor] Ошибка разбора:', e)
+          console.warn("[XHR Interceptor] Ошибка разбора:", e)
         }
       })
     }
@@ -180,7 +180,6 @@ function toggleConfirmInterceptor(enabled) {
 }
 
 function showNotification(title, text) {
-  // Если это Android WebView, ничего не делать (выходим)
   if (window.AndroidInterface) {
     return
   }
@@ -237,6 +236,11 @@ function waitForXHR(url, timeout = 10000) {
 // git push origin main
 // git tag v1.0.2
 // git push origin v1.0.2
+
+// Либо:
+
+// npm version patch
+// git push --follow-tags
 const arrMonstersAll = [
   "Жаблиф",
   "Жабзор",
@@ -2027,7 +2031,7 @@ const menuFight = new Menu({
     },
     {
       type: "checkbox",
-      text: "Включить добивание",
+      text: "Добивание",
       storage: "monsterSwapEnabled",
     },
     {
@@ -2405,7 +2409,7 @@ const menuWeather = new Menu({
     },
     {
       type: "checkbox",
-      text: "Включить ограничение погоды",
+      text: "Ограничение погоды",
       disable: true,
       storage: "weatherLimit",
     },
@@ -2425,7 +2429,7 @@ const menuLimitMonster = new Menu({
     },
     {
       type: "checkbox",
-      text: "Включить ограничение монстров",
+      text: "Ограничение монстров",
       disable: true,
       storage: "monsterLimitEnable",
     },
@@ -2584,11 +2588,6 @@ const menuButtons = new Button([
     text: "Дроп",
     onClick: () => containerDrop.classList.toggle("open"),
   },
-  // {
-  //   icon: "fa-light icons-fight",
-  //   text: "Для яда",
-  //   onClick: () => new Tester().execute(),
-  // },
 ])
 
 const btnToggle = document.createElement("div")
@@ -2613,31 +2612,31 @@ mainMenu.append(containerDrop)
 document.body.append(btnToggle, mainMenu)
 class ThemeController {
   constructor() {
-    this.systemTheme = settings.getFromStorage('systemTheme', false)
+    this.systemTheme = settings.getFromStorage("systemTheme", false)
     this.nowTheme = null
   }
 
   init() {
     if (!this.systemTheme) {
-      this.nowTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      settings.setToStorage('themeMode', true)
-      settings.setToStorage('theme', this.nowTheme)
+      this.nowTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      settings.setToStorage("themeMode", true)
+      settings.setToStorage("theme", this.nowTheme)
     } else {
-      this.nowTheme = settings.getFromStorage('theme')
+      this.nowTheme = settings.getFromStorage("theme")
     }
 
     this.setTheme(this.nowTheme)
   }
 
   setTheme(theme) {
-    document.body.classList.remove('theme-light', 'theme-dark')
+    document.body.classList.remove("theme-light", "theme-dark")
     document.body.classList.add(`theme-${theme}`)
-    settings.setToStorage('theme', theme)
+    settings.setToStorage("theme", theme)
     this.nowTheme = theme
   }
 
   toggleTheme() {
-    const newTheme = this.nowTheme === 'dark' ? 'light' : 'dark'
+    const newTheme = this.nowTheme === "dark" ? "light" : "dark"
     this.setTheme(newTheme)
   }
 }
@@ -2831,7 +2830,7 @@ class HealAction {
 
     await wait
 
-    if (document.querySelector("#divAlerten .alerten.getting.minus")) return this.teleportArea()
+    if (document.querySelector("#divAlerten .alerten.getting.minus")) await this.teleportArea()
 
     await GameUtils.btnWild(true)
   }
@@ -3575,13 +3574,16 @@ class LevelUpAction {
   }
 
   findMonster() {
-    if (!+settings.get("monsterUp")) {
+    const monsterSearch = +settings.get("monsterUp").replace(/[^\d]/g, "")
+    console.log()
+
+    if (!monsterSearch) {
       soundController.play("shine")
       showNotification("Прокачать", "Указанного монстра с собой нет")
       return false
     }
 
-    const numberMonster = this.data.object.findIndex((m) => m.id === +settings.get("monsterUp").replace(/[^\d]/g, ""))
+    const numberMonster = this.data.object.findIndex((m) => m.id === monsterSearch)
 
     if (!numberMonster) {
       soundController.play("shine")
@@ -3648,15 +3650,15 @@ class SwapAction {
       return false
     }
 
-    const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
     btnOpen.click()
 
     btnOpen.classList.remove("active")
-    document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+    document.querySelector(" .divDockPanels").style.display = "none"
     await this.waitMenuTeam()
     await GameUtils.delayFast()
 
-    const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+    const monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
     for (const el of monsters) {
       if (
         el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
@@ -3674,7 +3676,7 @@ class SwapAction {
   }
 
   async waitMenuTeam() {
-    const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
+    const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
     return this.observer.observe(
       "waitTeam",
       menuTeam,
@@ -3934,7 +3936,7 @@ class CaptureAction {
   }
   //
   async waitMenuTeam() {
-    const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
+    const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
     return this.observer.observe(
       "waitTeam",
       menuTeam,
@@ -3947,14 +3949,14 @@ class CaptureAction {
       return true
     }
 
-    const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
     btnOpen.click()
 
     btnOpen.classList.remove("active")
-    document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+    document.querySelector(" .divDockPanels").style.display = "none"
     await this.waitMenuTeam()
 
-    const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+    const monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
     for (const el of monsters) {
       if (
         el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
@@ -3976,11 +3978,11 @@ class CaptureAction {
   }
 
   async blockTransfer() {
-    const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
     const response = waitForXHR("/do/pokes/load/team")
     btnOpen.click()
 
-    document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+    document.querySelector(" .divDockPanels").style.display = "none"
     await this.waitMenuTeam()
 
     const data = await response
@@ -3990,14 +3992,14 @@ class CaptureAction {
     btnOpen.click()
   }
   async hasCountCapture() {
-    const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
     btnOpen.click()
 
-    document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+    document.querySelector(" .divDockPanels").style.display = "none"
 
     await this.waitMenuTeam()
 
-    const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard").length
+    const monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard").length
     const calc = monsters - arrCapture.length
 
     if (calc >= +settings.get("userCountCapture") || monsters === 6) {
@@ -4035,6 +4037,8 @@ class BattleActionStrategy {
     if (settings.get("surrenderTrainer")) {
       if (document.querySelector("#divFightH .pokemonBoxDummy")?.contains("trainer")) return new SurrenderAction().execute()
     }
+    // ДРОП ЯДА
+    // if (this.enemy.name === "Питонстр" && redMonster) return new Tester().execute()
 
     for (const [key, set] of Object.entries(allMonsters)) {
       let actualKey = key
@@ -4183,21 +4187,47 @@ const bot = new BattleBot()
 ///
 
 // class Tester {
+//   static STATUS_SELECTORS = {
+//     "Семена-пиявки": "-210px 0px",
+//   }
 //   constructor() {
+//     this.attack = null
+//     this.firtsMonster = null
+//     this.player = new Player()
+//     this.manager = new AttackManager(this.player)
+
 //     this.observer = new BattleObserver()
 //   }
 //   async execute() {
+//     if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
+
+//     const result = this.manager.findAttack("Семена-пиявки")
+
+//     this.attack = result.attack
+//     if (!this.attack) return BattleState.handleCriticalSituation()
+//     this.attack?.click()
+
+//     await new BattleObserver().waitForBattleOrMonsterChange()
+
+//     this.firtsMonster = this.player.hp
+
+//     if (!(await this.isStatusActive())) return BattleState.handleCriticalSituation()
+
+//     await GameUtils.delayAttack()
+
 //     while (true) {
 //       let btnOpen = null
 //       let monsters = null
-//       btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+//       btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
 //       btnOpen.click()
 
 //       btnOpen.classList.remove("active")
-//       document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+//       document.querySelector(".divDockPanels").style.display = "none"
+
 //       await this.waitMenuTeam()
 
-//       monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+//       monsters = document.querySelectorAll(".divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+
 //       for (const el of monsters) {
 //         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "17368244") {
 //           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
@@ -4208,16 +4238,20 @@ const bot = new BattleBot()
 //         }
 //       }
 
-//       if (!BattleState.isBattleActive()) return console.log("конец боя")
+//       if (!BattleState.isBattleActive()) {
+//         if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+//         return GameUtils.afterFight(this.attack)
+//       }
 
-//       btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+//       await GameUtils.delayAttack()
+//       btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
 //       btnOpen.click()
 
 //       btnOpen.classList.remove("active")
-//       document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
+//       document.querySelector(" .divDockPanels").style.display = "none"
 //       await this.waitMenuTeam()
 
-//       monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+//       monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
 //       for (const el of monsters) {
 //         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "9824501") {
 //           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
@@ -4227,11 +4261,16 @@ const bot = new BattleBot()
 //           break
 //         }
 //       }
-//       if (!BattleState.isBattleActive()) return console.log("конец боя")
+//       if (!BattleState.isBattleActive()) {
+//         if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+//         return GameUtils.afterFight(this.attack)
+//       }
+
+//       await GameUtils.delayAttack()
 //     }
 //   }
 //   async waitMenuTeam() {
-//     const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
+//     const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
 //     return this.observer.observe(
 //       "waitTeam",
 //       menuTeam,
@@ -4239,32 +4278,13 @@ const bot = new BattleBot()
 //       (mutation) => mutation.type === "childList" && mutation.addedNodes.length > 0
 //     )
 //   }
-//   async setMonster() {
-//     const btnOpen = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
-//     btnOpen.click()
 
-//     btnOpen.classList.remove("active")
-//     document.querySelector("#divDockMenu .divDockPanels").style.display = "none"
-//     await this.waitMenuTeam()
+//   async isStatusActive() {
+//     const statusAll = document.querySelectorAll("#divFightH .statusimg")
 
-//     const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
-//     for (const el of monsters) {
-//       if (
-//         el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
-//         settings.get("monsterCapture").replace(/[^\d]/g, "")
-//       ) {
-//         const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
-//         const response = waitForXHR("/do/fight/switche")
-//         btnSet?.click()
-//         if (!btnSet) return true
-//         await response
-//         this.tauntCounter++
-//         return true
-//       }
+//     for (const el of statusAll) {
+//       if (el.style.backgroundPosition.trim() === Tester.STATUS_SELECTORS["Семена-пиявки"]) return true
 //     }
-
-//     soundController.play("shine")
-//     showNotification("Поймать", "Монстр для поимки отсутствует")
 //     return false
 //   }
 // }
@@ -4323,6 +4343,7 @@ class MessageManager {
 
   start() {
     this.searchMyName()
+    this.test()
     this.observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
