@@ -232,10 +232,10 @@ function waitForXHR(url, timeout = 10000) {
 
 // Обновить на новую версию:
 // git add .
-// git commit -m "Release v1.0.2"
+// git commit -m "Release v1.0.6"
 // git push origin main
-// git tag v1.0.2
-// git push origin v1.0.2
+// git tag v1.0.6
+// git push origin v1.0.6
 
 // Либо:
 
@@ -1596,7 +1596,7 @@ class Input extends Button {
     }
     this.input.addEventListener("input", (e) => {
       e.stopPropagation()
-      if (!noTrim) {
+      if (!options.noTrim) {
         this.input.value = this.input.value.trim()
       }
       if (this.input.value.length > 0) {
@@ -2721,31 +2721,31 @@ mainMenu.append(containerDrop)
 document.body.append(btnToggle, mainMenu)
 class ThemeController {
   constructor() {
-    this.systemTheme = settings.getFromStorage("systemTheme", false)
+    this.systemTheme = settings.getFromStorage('systemTheme', false)
     this.nowTheme = null
   }
 
   init() {
     if (!this.systemTheme) {
-      this.nowTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      settings.setToStorage("themeMode", true)
-      settings.setToStorage("theme", this.nowTheme)
+      this.nowTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      settings.setToStorage('themeMode', true)
+      settings.setToStorage('theme', this.nowTheme)
     } else {
-      this.nowTheme = settings.getFromStorage("theme")
+      this.nowTheme = settings.getFromStorage('theme')
     }
 
     this.setTheme(this.nowTheme)
   }
 
   setTheme(theme) {
-    document.body.classList.remove("theme-light", "theme-dark")
+    document.body.classList.remove('theme-light', 'theme-dark')
     document.body.classList.add(`theme-${theme}`)
-    settings.setToStorage("theme", theme)
+    settings.setToStorage('theme', theme)
     this.nowTheme = theme
   }
 
   toggleTheme() {
-    const newTheme = this.nowTheme === "dark" ? "light" : "dark"
+    const newTheme = this.nowTheme === 'dark' ? 'light' : 'dark'
     this.setTheme(newTheme)
   }
 }
