@@ -227,7 +227,7 @@ function waitForXHR(url, timeout = 10000) {
   })
 }
 
-// cat inject.js utils.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js > bundle.js
+// cat inject.js utils.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // Обновить на новую версию:
@@ -1306,6 +1306,9 @@ const DEFAULT_VALUES = {
   // Лимит монстров
   countMonsterLimit: "",
   monsterLimitEnable: false,
+  //Лимит монстров на час
+  countMonsterHourLimit: "",
+  monsterLimitHourEnable: false,
   //
 
   // Антибот
@@ -1324,6 +1327,15 @@ const DEFAULT_VALUES = {
   variableItem: "",
   // Маршрут пользователя лечения
   spRoutHeal: [],
+
+  // ЯД
+  twoMonsterToxin: "",
+  threeMonsterToxin: "",
+  toxinEnabled: false,
+
+  // Автореклама
+  userAd: "",
+  autoAdEnable: false,
 }
 
 class SettingsManager {
@@ -1584,7 +1596,9 @@ class Input extends Button {
     }
     this.input.addEventListener("input", (e) => {
       e.stopPropagation()
-      this.input.value = this.input.value.trim()
+      if (!noTrim) {
+        this.input.value = this.input.value.trim()
+      }
       if (this.input.value.length > 0) {
         this.icon.classList.add("visible")
       } else {
@@ -2039,6 +2053,11 @@ const menuFight = new Menu({
       text: "Настройка шайни/супер",
       onClick: () => menuShine.open(),
     },
+    {
+      icon: "fa-light icons-toxin",
+      text: "Дроп яда Питонстра",
+      onClick: () => menuToxin.open(),
+    },
   ],
 })
 const menuShine = new Menu({
@@ -2120,7 +2139,31 @@ const menuSwitchAttack = new Menu({
     },
   ],
 })
-
+const menuToxin = new Menu({
+  title: "Дроп яда Питонстра",
+  text: "Стартовый монстр должен быть с Семенами-пиявками.\n Второй и третий монстр будут меняться между собой.\n Рекомендуется использовать второго с Хабубом, третьего летающего монстра.",
+  items: [
+    {
+      type: "input",
+      text: "Второй монстр:",
+      placeholder: "id монстра",
+      storage: "twoMonsterToxin",
+      width: "95px",
+    },
+    {
+      type: "input",
+      text: "Третий монстр:",
+      placeholder: "id монстра",
+      storage: "threeMonsterToxin",
+      width: "95px",
+    },
+    {
+      type: "checkbox",
+      text: "Включить дроп яда",
+      storage: "toxinEnabled",
+    },
+  ],
+})
 //
 const menuMonster = new Menu({
   title: "Монстры",
@@ -2386,6 +2429,11 @@ const menuOther = new Menu({
       text: "Лечение",
       onClick: () => menuHeal.open(),
     },
+    {
+      icon: "fa-light icons-ad",
+      text: "Автореклама",
+      onClick: () => menuAutoAd.open(),
+    },
   ],
 })
 
@@ -2421,6 +2469,21 @@ const menuLimitMonster = new Menu({
   title: "Ограничение монстров",
   items: [
     {
+      icon: "fa-light icons-clock-one",
+      text: "Лимит на час",
+      onClick: () => menuLimitHourMonster.open(),
+    },
+    {
+      icon: "fa-light icons-clock",
+      text: "Лимит на всех",
+      onClick: () => menuLimitAllMonster.open(),
+    },
+  ],
+})
+const menuLimitAllMonster = new Menu({
+  title: "Ограничение монстров на всех",
+  items: [
+    {
       type: "input",
       placeholder: "Количество монстров",
       width: "145px",
@@ -2435,7 +2498,25 @@ const menuLimitMonster = new Menu({
     },
   ],
 })
-
+const menuLimitHourMonster = new Menu({
+  title: "Ограничение монстров на час",
+  text: "После часа паузы, автобой сам продолжит работу.",
+  items: [
+    {
+      type: "input",
+      placeholder: "Количество монстров",
+      width: "145px",
+      storage: "countMonsterHourLimit",
+      number: true,
+    },
+    {
+      type: "checkbox",
+      text: "Ограничение монстров",
+      disable: true,
+      storage: "monsterLimitHourEnable",
+    },
+  ],
+})
 //
 const menuAntiBot = new Menu({
   title: "Антибот",
@@ -2515,7 +2596,31 @@ const menuAutoItems = new Menu({
     },
   ],
 })
-
+const menuAutoAd = new Menu({
+  title: "Реклама",
+  items: [
+    {
+      type: "input",
+      storage: "userAd",
+      placeholder: "Ваша реклама",
+      noTrim: true,
+      width: "200px",
+    },
+    {
+      type: "checkbox",
+      text: "Включить рекламу",
+      storage: "autoAdEnable",
+      disable: true,
+      onChange: () => {
+        if (settings.get("autoAdEnable") === true) {
+          autoAd.execute()
+        } else {
+          autoAd.stop()
+        }
+      },
+    },
+  ],
+})
 const menuHeal = new Menu({
   title: "Настройки лечения",
   items: [
@@ -2588,6 +2693,10 @@ const menuButtons = new Button([
     text: "Дроп",
     onClick: () => containerDrop.classList.toggle("open"),
   },
+  // {
+  //   text: "Тест",
+  //   onClick: () => new AutoReklama().execute(),
+  // },
 ])
 
 const btnToggle = document.createElement("div")
@@ -2919,12 +3028,12 @@ class HealAction {
   }
   //
   async transferMonster() {
-    const openTeam = document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="team"]')
+    const openTeam = document.querySelector('.divDockIcons .divDockIn img[src*="team"]')
     openTeam.click()
 
     await this.waitMenuTeam()
 
-    const monsters = document.querySelectorAll("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+    const monsters = document.querySelectorAll(".divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
 
     for (const m of monsters) {
       const transfer = +m.querySelector(".maincardContainer .toolbar .id").textContent.replace(/[^\d]/g, "")
@@ -2939,7 +3048,7 @@ class HealAction {
     openTeam.click()
   }
   async waitMenuTeam() {
-    const menuTeam = document.querySelector("#divDockMenu .divDockPanels .panel.panelpokes .divPokeTeam")
+    const menuTeam = document.querySelector(".divDockPanels .panel.panelpokes .divPokeTeam")
     return this.observer.observe(
       "waitTeam",
       menuTeam,
@@ -4014,6 +4123,7 @@ class CaptureAction {
 //
 
 let countMonsterAll = 0
+let countMonsterHour = 0
 class BattleActionStrategy {
   constructor() {
     this.enemy = new Enemy()
@@ -4037,8 +4147,6 @@ class BattleActionStrategy {
     if (settings.get("surrenderTrainer")) {
       if (document.querySelector("#divFightH .pokemonBoxDummy")?.contains("trainer")) return new SurrenderAction().execute()
     }
-    // ДРОП ЯДА
-    // if (this.enemy.name === "Питонстр" && redMonster) return new Tester().execute()
 
     for (const [key, set] of Object.entries(allMonsters)) {
       let actualKey = key
@@ -4058,13 +4166,16 @@ class BattleActionStrategy {
 
         const strategy = this.strategyMap[actualKey]
         if (strategy) {
-          if (settings.get("monsterLimitEnable") === true && +settings.get("countMonsterLimit") >= countMonsterAll) {
+          if (settings.get("monsterLimitEnable") === true && Number(settings.get("countMonsterLimit")) <= countMonsterAll) {
             soundController.play("shine")
             showNotification("Лимит", "Достигнут лимит монстров")
-            bot.stop()
-            return
+            return bot.stop()
           }
-
+          if (settings.get("monsterLimitHourEnable") === true && Number(settings.get("countMonsterHourLimit")) <= countMonsterHour) {
+            soundController.play("shine")
+            showNotification("Лимит", "Достигнут лимит монстров в час")
+            await GameUtils.delay(3600000, 3600001)
+          }
           if (settings.get("weatherLimitEnable") === true) {
             const weatherIcon = divVisioFight.querySelector("#divFightData #divFightWeather .iconweather")
             if (
@@ -4079,9 +4190,15 @@ class BattleActionStrategy {
               return
             }
           }
-
+          // ДРОП ЯДА
+          if (settings.get("toxinEnabled") && this.enemy.name === "Питонстр" && redMonster) {
+            countMonsterAll++
+            countMonsterHour++
+            return new ToxinAction().execute()
+          }
           await strategy()
           countMonsterAll++
+          countMonsterHour++
           return
         }
       }
@@ -4186,108 +4303,122 @@ class BattleBot {
 const bot = new BattleBot()
 ///
 
-// class Tester {
-//   static STATUS_SELECTORS = {
-//     "Семена-пиявки": "-210px 0px",
-//   }
-//   constructor() {
-//     this.attack = null
-//     this.firtsMonster = null
-//     this.player = new Player()
-//     this.manager = new AttackManager(this.player)
+class ToxinAction {
+  static STATUS_SELECTORS = {
+    "Семена-пиявки": "-210px 0px",
+  }
+  constructor() {
+    this.attack = null
+    this.firtsMonster = null
+    this.player = new Player()
+    this.manager = new AttackManager(this.player)
 
-//     this.observer = new BattleObserver()
-//   }
-//   async execute() {
-//     if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
+    this.observer = new BattleObserver()
+  }
+  async execute() {
+    if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
 
-//     const result = this.manager.findAttack("Семена-пиявки")
+    const result = this.manager.findAttack("Семена-пиявки")
 
-//     this.attack = result.attack
-//     if (!this.attack) return BattleState.handleCriticalSituation()
-//     this.attack?.click()
+    this.attack = result.attack
+    if (!this.attack) return BattleState.handleCriticalSituation()
+    this.attack?.click()
 
-//     await new BattleObserver().waitForBattleOrMonsterChange()
+    await new BattleObserver().waitForBattleOrMonsterChange()
 
-//     this.firtsMonster = this.player.hp
+    this.firtsMonster = this.player.hp
 
-//     if (!(await this.isStatusActive())) return BattleState.handleCriticalSituation()
+    if (!(await this.isStatusActive())) return BattleState.handleCriticalSituation()
 
-//     await GameUtils.delayAttack()
+    await GameUtils.delayAttack()
 
-//     while (true) {
-//       let btnOpen = null
-//       let monsters = null
-//       btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-//       btnOpen.click()
+    while (true) {
+      let btnOpen = null
+      let monsters = null
+      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+      btnOpen.click()
 
-//       btnOpen.classList.remove("active")
-//       document.querySelector(".divDockPanels").style.display = "none"
+      btnOpen.classList.remove("active")
+      document.querySelector(".divDockPanels").style.display = "none"
 
-//       await this.waitMenuTeam()
+      await this.waitMenuTeam()
 
-//       monsters = document.querySelectorAll(".divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+      monsters = document.querySelectorAll(".divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
 
-//       for (const el of monsters) {
-//         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "17368244") {
-//           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
-//           const response = waitForXHR("/do/fight/switche")
-//           btnSet?.click()
-//           await response
-//           break
-//         }
-//       }
+      for (const el of monsters) {
+        if (
+          el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+          settings.get("twoMonsterToxin").replace(/[^\d]/g, "")
+        ) {
+          const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+          if (!btnSet) {
+            await new SurrenderAction().execute()
+            return new HealAction().execute()
+          }
+          const response = waitForXHR("/do/fight/switche")
+          btnSet.click()
+          await response
+          break
+        }
+      }
 
-//       if (!BattleState.isBattleActive()) {
-//         if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
-//         return GameUtils.afterFight(this.attack)
-//       }
+      if (!BattleState.isBattleActive()) {
+        if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        return GameUtils.afterFight(this.attack)
+      }
 
-//       await GameUtils.delayAttack()
-//       btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-//       btnOpen.click()
+      await GameUtils.delayAttack()
+      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+      btnOpen.click()
 
-//       btnOpen.classList.remove("active")
-//       document.querySelector(" .divDockPanels").style.display = "none"
-//       await this.waitMenuTeam()
+      btnOpen.classList.remove("active")
+      document.querySelector(" .divDockPanels").style.display = "none"
+      await this.waitMenuTeam()
 
-//       monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
-//       for (const el of monsters) {
-//         if (el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") === "9824501") {
-//           const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
-//           const response = waitForXHR("/do/fight/switche")
-//           btnSet?.click()
-//           await response
-//           break
-//         }
-//       }
-//       if (!BattleState.isBattleActive()) {
-//         if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
-//         return GameUtils.afterFight(this.attack)
-//       }
+      monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+      for (const el of monsters) {
+        if (
+          el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+          settings.get("threeMonsterToxin").replace(/[^\d]/g, "")
+        ) {
+          const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+          if (!btnSet) {
+            await new SurrenderAction().execute()
+            return new HealAction().execute()
+          }
+          const response = waitForXHR("/do/fight/switche")
+          btnSet.click()
+          await response
+          break
+        }
+      }
+      if (!BattleState.isBattleActive()) {
+        if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        return GameUtils.afterFight(this.attack)
+      }
 
-//       await GameUtils.delayAttack()
-//     }
-//   }
-//   async waitMenuTeam() {
-//     const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
-//     return this.observer.observe(
-//       "waitTeam",
-//       menuTeam,
-//       { childList: true },
-//       (mutation) => mutation.type === "childList" && mutation.addedNodes.length > 0
-//     )
-//   }
+      await GameUtils.delayAttack()
+    }
+  }
+  async waitMenuTeam() {
+    const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
+    return this.observer.observe(
+      "waitTeam",
+      menuTeam,
+      { childList: true },
+      (mutation) => mutation.type === "childList" && mutation.addedNodes.length > 0
+    )
+  }
 
-//   async isStatusActive() {
-//     const statusAll = document.querySelectorAll("#divFightH .statusimg")
+  async isStatusActive() {
+    const statusAll = document.querySelectorAll("#divFightH .statusimg")
 
-//     for (const el of statusAll) {
-//       if (el.style.backgroundPosition.trim() === Tester.STATUS_SELECTORS["Семена-пиявки"]) return true
-//     }
-//     return false
-//   }
-// }
+    for (const el of statusAll) {
+      if (el.style.backgroundPosition.trim() === ToxinAction.STATUS_SELECTORS["Семена-пиявки"]) return true
+    }
+    return false
+  }
+}
 let meName = null
 
 class SoundController {
@@ -4370,6 +4501,14 @@ class MessageManager {
               this.enemyName = name
               showNotification("Сообщение", "Новое сообщение от " + this.enemyName)
               this.observeTextChanges(node)
+
+              if (settings.get("antiBotEnable") === true && settings.get("variableAntiBot") === "stop") {
+                bot.stop()
+              }
+
+              if (settings.get("antiBotEnable") === true && settings.get("variableAntiBot") === "pause") {
+                bot.pause()
+              }
             }
           }
         }
@@ -4760,3 +4899,64 @@ class RouterViewHeal {
     })
   }
 }
+class AutoReklama {
+  constructor() {
+    this.observer = new BattleObserver()
+    this.divChatWrap = document.querySelector("#divChatWrap")
+    this.timer = null
+    this.timerMs = 600000
+  }
+  async execute() {
+    if (!settings.get("userAd")) {
+      soundController.play("shine")
+      showNotification("Реклама", "Укажите вашу рекламу")
+      return
+    }
+    const textArea = this.divChatWrap.querySelector("#divInputFields textarea")
+
+    while (settings.get("autoAdEnable") === true) {
+      textArea.disabled = true
+      const saveUsertextArea = textArea.value
+
+      textArea.value = ""
+      textArea.value = `*${settings.get("userAd")}*`
+
+      const btnSend = this.divChatWrap.querySelector("#divInputButtons .btnSend")
+      btnSend.click()
+      await this.waitSend()
+      textArea.disabled = false
+      textArea.value = saveUsertextArea
+
+      const divAlerten = document.querySelectorAll("#divAlerten .alerten.warning")
+      if (divAlerten) {
+        for (const el of divAlerten) {
+          if (el.textContent.trim().includes("Следующее объявление вы сможете отправить через")) {
+            const match = el.textContent.match(/через\s*(?:(\d+)\s*мин\.)?\s*(?:(\d+)\s*сек\.)?/)
+
+            const [, min, sec] = match
+            this.timerMs = ((+min || 0) * 60 + (+sec || 0)) * 1000
+
+            break
+          }
+        }
+      }
+
+      this.timer = await GameUtils.delay(this.timerMs, this.timerMs + 1)
+    }
+  }
+  waitSend() {
+    const container = this.divChatWrap.querySelector("#divInputButtons .btnSend")
+    return this.observer.observe(
+      "waitAd",
+      container,
+      { attributeFilter: ["style"], attributes: true },
+      (mutation) => mutation.type === "attributes" && mutation.attributeName === "style" && mutation.target.style.display !== "none"
+    )
+  }
+  stop() {
+    this.observer.disconnect("waitAd")
+    if (this.timer) clearTimeout(this.timer)
+  }
+}
+
+const autoAd = new AutoReklama()

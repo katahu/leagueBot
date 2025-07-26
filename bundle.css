@@ -133,6 +133,22 @@
 
 .icons-clipboard-medical::before {
   content: "\e133";
+}
+
+.icons-toxin::before {
+  content: "\f714";
+}
+
+.icons-clock::before {
+  content: "\e358";
+}
+
+.icons-clock-one::before {
+  content: "\e34e";
+}
+
+.icons-ad::before {
+  content: "\f641";
 }:root {
   --spacing-s: 0.25rem;
   --spacing-md: 0.5rem;
@@ -265,6 +281,7 @@
 }
 
 .menuItem {
+  position: relative;
   display: flex;
   font-size: 0.85rem;
   align-items: center;
