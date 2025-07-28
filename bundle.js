@@ -1333,6 +1333,11 @@ const DEFAULT_VALUES = {
   threeMonsterToxin: "",
   toxinEnabled: false,
 
+  // Колючки
+  firstMonsterSpike: "",
+  twoMonsterSpike: "",
+  threeMonsterSpike: "",
+  spikesEnabled: false,
   // Автореклама
   userAd: "",
   autoAdEnable: false,
@@ -2058,6 +2063,11 @@ const menuFight = new Menu({
       text: "Дроп яда Питонстра",
       onClick: () => menuToxin.open(),
     },
+    {
+      icon: "fa-light icons-spike",
+      text: "Дроп колючек Пикан",
+      onClick: () => menuSpike.open(),
+    },
   ],
 })
 const menuShine = new Menu({
@@ -2161,6 +2171,38 @@ const menuToxin = new Menu({
       type: "checkbox",
       text: "Включить дроп яда",
       storage: "toxinEnabled",
+    },
+  ],
+})
+const menuSpike = new Menu({
+  title: "Дроп колючек Пикан",
+  text: "Первый монстр должен быть с Отравлением, он может быть не стартовый!\n Второй и третий монстр будут меняться между собой.",
+  items: [
+    {
+      type: "input",
+      text: "Первый монстр:",
+      placeholder: "Пусто - текущим",
+      storage: "firstMonsterSpike",
+      width: "110px",
+    },
+    {
+      type: "input",
+      text: "Второй монстр:",
+      placeholder: "id монстра",
+      storage: "twoMonsterSpike",
+      width: "95px",
+    },
+    {
+      type: "input",
+      text: "Третий монстр:",
+      placeholder: "id монстра",
+      storage: "threeMonsterSpike",
+      width: "95px",
+    },
+    {
+      type: "checkbox",
+      text: "Включить дроп колючек",
+      storage: "spikesEnabled",
     },
   ],
 })
@@ -2482,6 +2524,7 @@ const menuLimitMonster = new Menu({
 })
 const menuLimitAllMonster = new Menu({
   title: "Ограничение монстров на всех",
+  text: "Когда достигнет лимита монстров, прекратит работу автобой.",
   items: [
     {
       type: "input",
@@ -2500,7 +2543,7 @@ const menuLimitAllMonster = new Menu({
 })
 const menuLimitHourMonster = new Menu({
   title: "Ограничение монстров на час",
-  text: "После часа паузы, автобой сам продолжит работу.",
+  text: "После того как достигнет лимита монстров, будет пауза в 1 час и заного начнёт бить.",
   items: [
     {
       type: "input",
@@ -4194,7 +4237,12 @@ class BattleActionStrategy {
           if (settings.get("toxinEnabled") && this.enemy.name === "Питонстр" && redMonster) {
             countMonsterAll++
             countMonsterHour++
-            return new ToxinAction().execute()
+            return new dropSpecialAction().toxin()
+          }
+          if (settings.get("spikesEnabled") && this.enemy.name === "Пикан" && redMonster) {
+            countMonsterAll++
+            countMonsterHour++
+            return new dropSpecialAction().spike()
           }
           await strategy()
           countMonsterAll++
@@ -4303,19 +4351,22 @@ class BattleBot {
 const bot = new BattleBot()
 ///
 
-class ToxinAction {
+class dropSpecialAction {
   static STATUS_SELECTORS = {
     "Семена-пиявки": "-210px 0px",
+    Отравление: "-195px -15px",
   }
   constructor() {
     this.attack = null
     this.firtsMonster = null
+    this.twoMonster = null
+    this.threeMonster = null
     this.player = new Player()
     this.manager = new AttackManager(this.player)
 
     this.observer = new BattleObserver()
   }
-  async execute() {
+  async toxin() {
     if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
 
     const result = this.manager.findAttack("Семена-пиявки")
@@ -4328,7 +4379,7 @@ class ToxinAction {
 
     this.firtsMonster = this.player.hp
 
-    if (!(await this.isStatusActive())) return BattleState.handleCriticalSituation()
+    if (!(await this.isStatusActive("Семена-пиявки"))) return BattleState.handleCriticalSituation()
 
     await GameUtils.delayAttack()
 
@@ -4400,6 +4451,140 @@ class ToxinAction {
       await GameUtils.delayAttack()
     }
   }
+  async spike() {
+    while (true) {
+      if (this.player.hp <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
+
+      if (settings.get("firstMonsterSpike")) {
+        if (!(await this.setMonster())) return
+      }
+
+      this.firtsMonster = this.player.hp
+
+      if (this.firtsMonster <= +settings.get("criticalHP")) return BattleState.handleCriticalSituation()
+
+      const result = this.manager.findAttack("Отравление")
+
+      this.attack = result.attack
+      if (!this.attack) return BattleState.handleCriticalSituation()
+      this.attack?.click()
+
+      await new BattleObserver().waitForBattleOrMonsterChange()
+
+      this.firtsMonster = this.player.hp
+
+      if (await this.isStatusActive("Отравление")) break
+
+      await GameUtils.delayAttack()
+    }
+
+    while (true) {
+      let btnOpen = null
+      let monsters = null
+      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+      btnOpen.click()
+
+      btnOpen.classList.remove("active")
+      document.querySelector(".divDockPanels").style.display = "none"
+
+      await this.waitMenuTeam()
+
+      monsters = document.querySelectorAll(".divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+
+      for (const el of monsters) {
+        if (
+          el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+          settings.get("twoMonsterSpike").replace(/[^\d]/g, "")
+        ) {
+          const elementHP = el.querySelector(".minicardContainer .progressbar.barHP div")
+          this.twoMonster = GameUtils.parsePercentage(elementHP)
+
+          const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+          if (!btnSet) {
+            await new SurrenderAction().execute()
+            return new HealAction().execute()
+          }
+          // const response = waitForXHR("/do/fight/switche")
+          btnSet.click()
+          // await response
+          await new BattleObserver().waitForBattleOrMonsterChange()
+          break
+        }
+      }
+
+      if (!BattleState.isBattleActive()) {
+        if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        if (this.twoMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        return GameUtils.afterFight(this.attack)
+      }
+
+      await GameUtils.delayAttack()
+      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+      btnOpen.click()
+
+      btnOpen.classList.remove("active")
+      document.querySelector(" .divDockPanels").style.display = "none"
+      await this.waitMenuTeam()
+
+      monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+      for (const el of monsters) {
+        if (
+          el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+          settings.get("threeMonsterSpike").replace(/[^\d]/g, "")
+        ) {
+          const elementHP = el.querySelector(".minicardContainer .progressbar.barHP div")
+          this.threeMonster = GameUtils.parsePercentage(elementHP)
+
+          const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+          if (!btnSet) {
+            await new SurrenderAction().execute()
+            return new HealAction().execute()
+          }
+          // const response = waitForXHR("/do/fight/switche")
+          btnSet.click()
+          // await response
+          await new BattleObserver().waitForBattleOrMonsterChange()
+          break
+        }
+      }
+      if (!BattleState.isBattleActive()) {
+        if (this.firtsMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        if (this.twoMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        if (this.threeMonster <= +settings.get("criticalHP")) return new HealAction().execute()
+        return GameUtils.afterFight(this.attack)
+      }
+
+      await GameUtils.delayAttack()
+    }
+  }
+  async setMonster() {
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    btnOpen.click()
+
+    btnOpen.classList.remove("active")
+    document.querySelector(" .divDockPanels").style.display = "none"
+    await this.waitMenuTeam()
+
+    const monsters = document.querySelectorAll(" .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard")
+    for (const el of monsters) {
+      if (
+        el.querySelector(".maincardContainer .toolbar .id").textContent.trim().replace(/[^\d]/g, "") ===
+        settings.get("firstMonsterSpike").replace(/[^\d]/g, "")
+      ) {
+        const btnSet = el.querySelector(".maincardContainer .title .button.justicon")
+        const response = waitForXHR("/do/fight/switche")
+        btnSet?.click()
+        if (!btnSet) return true
+        await response
+        this.tauntCounter++
+        return true
+      }
+    }
+
+    soundController.play("shine")
+    showNotification("Дроп шипов", "Монстр отсутствует")
+    return false
+  }
   async waitMenuTeam() {
     const menuTeam = document.querySelector(" .divDockPanels .panel.panelpokes .divPokeTeam")
     return this.observer.observe(
@@ -4410,11 +4595,11 @@ class ToxinAction {
     )
   }
 
-  async isStatusActive() {
+  async isStatusActive(element) {
     const statusAll = document.querySelectorAll("#divFightH .statusimg")
 
     for (const el of statusAll) {
-      if (el.style.backgroundPosition.trim() === ToxinAction.STATUS_SELECTORS["Семена-пиявки"]) return true
+      if (el.style.backgroundPosition.trim() === dropSpecialAction.STATUS_SELECTORS[element]) return true
     }
     return false
   }

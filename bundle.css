@@ -139,6 +139,10 @@
   content: "\f714";
 }
 
+.icons-spike::before {
+  content: "*";
+}
+
 .icons-clock::before {
   content: "\e358";
 }
