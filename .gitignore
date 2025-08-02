@@ -1,0 +1,46 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+.pnpm-debug.log
+
+# Build output
+dist/
+build/
+out/
+release/
+*.local
+
+# Electron specific
+*.asar
+*.db
+*.lock
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+.history/
+
+# Env files
+.env
+.env.*
+
+# Cache
+.cache/
+.cache-loader/
+electron-builder-cache/
+electron-builder-snap-cache/
+__pycache__/
+
+# Logs
+*.log
+
+# Misc
+coverage/
+*.tsbuildinfo
