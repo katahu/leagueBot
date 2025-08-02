@@ -232,15 +232,18 @@ function waitForXHR(url, timeout = 10000) {
 
 // Обновить на новую версию:
 // git add .
-// git commit -m "Release v1.0.6"
+// git commit -m "Release v1.0.7"
 // git push origin main
-// git tag v1.0.6
-// git push origin v1.0.6
+// git tag v1.0.7
+// git push origin v1.0.7
 
 // Либо:
 
 // npm version patch
 // git push --follow-tags
+
+// npm version patch -m "Release v1.0.8"   // тут он сразу патчит в package.json новую версию.
+// git push --follow-tags // тут он отправляет в гит новую версию
 class TimePicker {
   constructor() {
     this.ITEM_HEIGHT = 40
