@@ -231,14 +231,14 @@ function waitForXHR(url, timeout = 10000) {
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add
-// git commit -m "Release version to 1.4"
+// git commit -m "Release version to 1.0.9"
 // git push origin main
 
-// git tag -d v1.4
-// git push origin :refs/tags/v1.4
+// git tag -d v1.0.9
+// git push origin :refs/tags/v1.0.9
 
-// git tag v1.4
-// git push origin v1.4
+// git tag v1.0.9
+// git push origin v1.0.9
 
 // npm run build -- --publish always
 class TimePicker {
@@ -4476,7 +4476,9 @@ class BattleActionStrategy {
 
     this.strategyMap = {
       Редкие: this.handleRareEncounter.bind(this),
-      Частые: () => (settings.get('lvlMaxEnabled') ? this.levelUp.bind(this) : this.attack(+settings.get('numberAttack'))),
+      Частые: () => {
+        return settings.get('lvlMaxEnabled') ? this.levelUp() : this.attack(+settings.get('numberAttack'))
+      },
       Поймать: this.capture.bind(this),
       Сдаться: this.surrender.bind(this),
       Сменить: this.switchPokemon.bind(this),
