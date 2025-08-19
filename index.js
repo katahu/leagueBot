@@ -13,10 +13,10 @@ const {
   dialog,
   Tray,
   Menu,
-} = require("electron")
-const { autoUpdater } = require("electron-updater")
-const path = require("path")
-const fs = require("fs")
+} = require('electron')
+const { autoUpdater } = require('electron-updater')
+const path = require('path')
+const fs = require('fs')
 
 // ============================================================================
 // 🧱 Глобальные переменные
@@ -29,9 +29,9 @@ let powerSaveBlockerId
 // ============================================================================
 // ⚙️ Настройки запуска
 // ============================================================================
-app.commandLine.appendSwitch("disable-background-timer-throttling")
-app.commandLine.appendSwitch("disable-renderer-backgrounding")
-app.commandLine.appendSwitch("disable-backgrounding-occluded-windows")
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 
 // ============================================================================
 // 🔧 Конфигурация главного окна
@@ -45,7 +45,7 @@ function getWindowConfig() {
     show: false,
     webPreferences: {
       contextIsolation: true,
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, 'preload.js'),
     },
   }
 }
@@ -56,8 +56,8 @@ function getWindowConfig() {
 function createWindow() {
   mainWindow = new BrowserWindow(getWindowConfig())
 
-  mainWindow.once("ready-to-show", () => mainWindow.show())
-  mainWindow.loadFile("index.html")
+  mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.loadFile('index.html')
   mainWindow.setMenuBarVisibility(false)
   // mainWindow.webContents.openDevTools({ mode: "detach" })
 
@@ -72,8 +72,8 @@ function createGameView() {
   gameView = new BrowserView({
     webPreferences: {
       contextIsolation: true,
-      preload: path.join(__dirname, "inject-preload.js"),
-      partition: "persist:gamebot",
+      preload: path.join(__dirname, 'inject-preload.js'),
+      partition: 'persist:gamebot',
       sandbox: true,
     },
   })
@@ -81,27 +81,27 @@ function createGameView() {
   mainWindow.setBrowserView(gameView)
   resizeGameView()
 
-  gameView.webContents.loadURL("https://game.league17.ru/")
+  gameView.webContents.loadURL('https://game.league17.ru/')
   // gameView.webContents.openDevTools({ mode: "detach" })
 
   // Безопасная навигация
   gameView.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
-    return { action: "deny" }
+    return { action: 'deny' }
   })
 
-  gameView.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("https://game.league17.ru/")) {
+  gameView.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('https://game.league17.ru/')) {
       event.preventDefault()
       shell.openExternal(url)
     }
   })
 
-  gameView.webContents.on("did-fail-load", (_, __, desc) => {
-    mainWindow.webContents.send("status-update", `Ошибка загрузки: ${desc}`)
+  gameView.webContents.on('did-fail-load', (_, __, desc) => {
+    mainWindow.webContents.send('status-update', `Ошибка загрузки: ${desc}`)
   })
 
-  gameView.webContents.on("dom-ready", async () => {
+  gameView.webContents.on('dom-ready', async () => {
     await injectBundleCSS()
     await injectBundleJS()
   })
@@ -112,19 +112,19 @@ function createGameView() {
 // ============================================================================
 async function injectBundleCSS() {
   try {
-    const css = await fs.promises.readFile(path.join(__dirname, "bundle.css"), "utf-8")
+    const css = await fs.promises.readFile(path.join(__dirname, 'bundle.css'), 'utf-8')
     await gameView.webContents.insertCSS(css)
   } catch (e) {
-    console.warn("[CSS] Не удалось загрузить bundle.css", e)
+    console.warn('[CSS] Не удалось загрузить bundle.css', e)
   }
 }
 
 async function injectBundleJS() {
   try {
-    const js = await fs.promises.readFile(path.join(__dirname, "bundle.js"), "utf-8")
+    const js = await fs.promises.readFile(path.join(__dirname, 'bundle.js'), 'utf-8')
     await gameView.webContents.executeJavaScript(js)
   } catch (e) {
-    console.warn("[JS] Не удалось загрузить bundle.js", e)
+    console.warn('[JS] Не удалось загрузить bundle.js', e)
   }
 }
 
@@ -132,17 +132,17 @@ async function injectBundleJS() {
 // Обработчики событий окна
 // ============================================================================
 function setupWindowEvents() {
-  mainWindow.on("resize", resizeGameView)
+  mainWindow.on('resize', resizeGameView)
 
-  mainWindow.on("focus", () => {
-    gameView.webContents.focus()
-  })
+  // mainWindow.on("focus", () => {
+  //   gameView.webContents.focus()
+  // })
 
-  mainWindow.on("show", () => {
-    gameView.webContents.focus()
-  })
+  // mainWindow.on("show", () => {
+  //   gameView.webContents.focus()
+  // })
 
-  mainWindow.on("minimize", (event) => {
+  mainWindow.on('minimize', (event) => {
     event.preventDefault()
     mainWindow.hide()
   })
@@ -159,7 +159,7 @@ function resizeGameView() {
 // Глобальные горячие клавиши
 // ============================================================================
 function registerGlobalShortcuts() {
-  globalShortcut.register("F5", () => {
+  globalShortcut.register('F5', () => {
     if (mainWindow?.isFocused() && gameView?.webContents?.isDestroyed?.() === false) {
       gameView.webContents.reload()
     }
@@ -170,28 +170,28 @@ function registerGlobalShortcuts() {
 //  Трей
 // ============================================================================
 function setupTray() {
-  tray = new Tray(path.join(__dirname, "console.png"))
-  tray.setToolTip("League17 Game Bot")
+  tray = new Tray(path.join(__dirname, 'console.png'))
+  tray.setToolTip('League17 Game Bot')
 
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
-        label: "Показать",
+        label: 'Показать',
         click: () => {
           mainWindow.show()
-          mainWindow.focus()
-          gameView.webContents.focus()
+          // mainWindow.focus()
+          // gameView.webContents.focus()
         },
       },
-      { label: "Выход", click: () => app.quit() },
+      { label: 'Выход', click: () => app.quit() },
     ])
   )
 
-  tray.on("click", () => {
+  tray.on('click', () => {
     if (mainWindow) {
       mainWindow.show()
-      mainWindow.focus()
-      gameView.webContents.focus()
+      // mainWindow.focus()
+      // gameView.webContents.focus()
     }
   })
 }
@@ -200,15 +200,15 @@ function setupTray() {
 // 🛡️ Энергосбережение
 // ============================================================================
 function setupPowerSaveBlocker() {
-  powerSaveBlockerId = powerSaveBlocker.start("prevent-display-sleep")
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep')
 }
 
 // ============================================================================
 // 🚀 Инициализация приложения
 // ============================================================================
 app.whenReady().then(() => {
-  protocol.handle("app", (request) => {
-    const url = request.url.replace("app://local/", "")
+  protocol.handle('app', (request) => {
+    const url = request.url.replace('app://local/', '')
     const filePath = path.normalize(path.join(__dirname, url))
     if (!filePath.startsWith(path.normalize(__dirname))) {
       return new Response(null, { status: 404 })
@@ -225,30 +225,30 @@ app.whenReady().then(() => {
     autoUpdater.checkForUpdatesAndNotify()
   }, 3000)
 
-  app.on("activate", () => {
+  app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 
-  process.on("uncaughtException", (err) => {
-    console.error("[Uncaught Exception]", err)
+  process.on('uncaughtException', (err) => {
+    console.error('[Uncaught Exception]', err)
   })
 })
-autoUpdater.on("update-available", () => {
+autoUpdater.on('update-available', () => {
   dialog.showMessageBox(mainWindow, {
-    type: "info",
-    title: "Обновление доступно",
-    message: "Найдено новое обновление. Оно будет загружено в фоновом режиме.",
-    buttons: ["OK"],
+    type: 'info',
+    title: 'Обновление доступно',
+    message: 'Найдено новое обновление. Оно будет загружено в фоновом режиме.',
+    buttons: ['OK'],
   })
 })
 
-autoUpdater.on("update-downloaded", () => {
+autoUpdater.on('update-downloaded', () => {
   dialog
     .showMessageBox(mainWindow, {
-      type: "info",
-      title: "Обновление готово",
-      message: "Обновление загружено. Приложение будет перезапущено для применения обновления.",
-      buttons: ["Перезапустить", "Позже"],
+      type: 'info',
+      title: 'Обновление готово',
+      message: 'Обновление загружено. Приложение будет перезапущено для применения обновления.',
+      buttons: ['Перезапустить', 'Позже'],
     })
     .then((result) => {
       if (result.response === 0) {
@@ -257,16 +257,16 @@ autoUpdater.on("update-downloaded", () => {
     })
 })
 
-autoUpdater.on("error", (err) => {
-  dialog.showErrorBox("Ошибка обновления", err == null ? "unknown" : (err.stack || err).toString())
+autoUpdater.on('error', (err) => {
+  dialog.showErrorBox('Ошибка обновления', err == null ? 'unknown' : (err.stack || err).toString())
 })
 // ============================================================================
 // ❌ Завершение работы
 // ============================================================================
-app.on("window-all-closed", () => {
+app.on('window-all-closed', () => {
   globalShortcut.unregisterAll()
   if (powerSaveBlocker.isStarted(powerSaveBlockerId)) {
     powerSaveBlocker.stop(powerSaveBlockerId)
   }
-  if (process.platform !== "darwin") app.quit()
+  if (process.platform !== 'darwin') app.quit()
 })
