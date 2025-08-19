@@ -5061,13 +5061,12 @@ const start = (async () => {
 //     const obs = new MutationObserver(async (mutationsList) => {
 //       for (const mutation of mutationsList) {
 //         for (const el of mutation.addedNodes) {
-//           // случай 1: новый пост
+//           // случай 1
 //           if (el instanceof HTMLElement && el.matches('.post.mine')) {
 //             if (this.arrIgnore.some((sel) => el.matches(sel))) continue
 //             await this.handlePost(el)
 //           }
 
-//           // случай 2: новый текст внутри существующего поста
 //           if (el instanceof Text) {
 //             const post = el.parentElement?.closest('.post.mine')
 //             if (!post) continue
@@ -5085,7 +5084,7 @@ const start = (async () => {
 //     })
 //   }
 
-//   // вынес логику в отдельный метод
+//
 //   async handlePost(post) {
 //     const userTwo = post.querySelector('.users .trainer .label')?.textContent.trim()
 //     if (userTwo !== userName) {
@@ -5185,10 +5184,10 @@ class MessageManager {
             const label = node.querySelector('.users .label')
             const name = label?.textContent.trim()
 
-            if (name && name !== meName) {
+            if (name && name !== userName) {
               soundController.play('message')
               this.enemyName = name
-              showNotification('Сообщение', 'Новое сообщение от ' + this.enemyName)
+              // showNotification('Сообщение', 'Новое сообщение от ' + this.enemyName)
               this.observeTextChanges(node)
 
               if (settings.get('antiBotEnable') === true && settings.get('variableAntiBot') === 'stop') {
@@ -5258,7 +5257,7 @@ class MessageManager {
     this.activeObservers = []
   }
   searchMyName() {
-    meName =
+    userName =
       document.querySelector('#divDockUser .trainer .label')?.textContent.trim() ||
       document.querySelector('#divOnline #divOnlineUser .trainer .label')?.textContent.trim() ||
       null
