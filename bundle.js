@@ -1499,6 +1499,7 @@ const DEFAULT_VALUES = {
   numberAttack: '0', // Долже быть number
   criticalPP: '0', // Долже быть number
   criticalHP: '25', // Долже быть number
+  nullPP: false, // Отключить восстановление PP
   variableShine: 'Не использовать', // супер убивать или ловить всех
   //
   // Монстр/атака для смены
@@ -2284,6 +2285,11 @@ const menuFight = new Menu({
       type: 'checkbox',
       text: 'Добивание',
       storage: 'monsterSwapEnabled',
+    },
+    {
+      type: 'checkbox',
+      text: 'Отключение PP',
+      storage: 'nullPP',
     },
     {
       type: 'checkbox',
@@ -3816,6 +3822,10 @@ class AttackManager {
         }
       }
 
+      if (!alternativeAttack && settings.get('nullPP') === true) {
+        alternativeAttack = this.attack
+      }
+
       return { attack: null, actualAttack: alternativeAttack }
     }
 
@@ -3986,11 +3996,11 @@ class AttackAction {
       await new BattleObserver().waitForBattleOrMonsterChange()
     }
 
-    if (this.actualAttack) {
+    if (this.actualAttack && settings.get('nullPP') === false) {
       return new HealAction().execute()
     }
 
-    return GameUtils.afterFight(this.attack)
+    if (settings.get('nullPP') === false) return GameUtils.afterFight(this.attack)
   }
 }
 //
