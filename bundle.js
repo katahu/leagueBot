@@ -1530,6 +1530,7 @@ const DEFAULT_VALUES = {
   monsterBall: '1',
   captureSemant: '',
   captureYarkokryl: '',
+  abilityCapture: '',
   //
   // Лимит монстров
   countMonsterLimit: '',
@@ -2288,7 +2289,7 @@ const menuFight = new Menu({
     },
     {
       type: 'checkbox',
-      text: 'Отключение PP',
+      text: 'Выключить PP',
       storage: 'nullPP',
     },
     {
@@ -2488,6 +2489,13 @@ const menuCapture = new Menu({
       placeholder: 'Количество',
       width: '80px',
       storage: 'userCountCapture',
+    },
+    {
+      type: 'input',
+      text: 'Абилки:',
+      placeholder: 'Названия через запятую',
+      width: '180px',
+      storage: 'abilityCapture',
     },
     {
       icon: 'fa-light icons-gear',
@@ -3008,7 +3016,8 @@ const menuButtons = new Button([
   // {
   //   text: 'Тест',
   //   onClick: () => {
-  //     autoStop.execute()
+  //     console.log(settings.get('abilityCapture').trim().toLowerCase().split(','))
+  //     console.log(settings.get('abilityCapture').toLowerCase().trim().split(','))
   //   },
   // },
 ])
@@ -4023,7 +4032,7 @@ class LevelUpAction {
   async execute() {
     while (BattleState.isBattleActive() && this.attempts < this.maxAttempts) {
       if (this.player.hp <= +settings.get('criticalHP')) return BattleState.handleCriticalSituation()
-      if (this.enemy.lvl >= +settings.get('maxHighLvl', 101)) return BattleState.handleCriticalSituation()
+      if (+this.enemy.lvl >= +settings.get('maxHighLvl', 101)) return BattleState.handleCriticalSituation()
 
       const result = this.manager.findAttack(settings.get('attackUp'))
 
@@ -4310,10 +4319,10 @@ class CaptureAction {
       await GameUtils.delayAttack()
 
       if (this.weatherAttack) {
-        const response = waitForXHR('/do/fight/attack')
+        // const response = waitForXHR('/do/fight/attack')
         this.weatherAttack.click()
-        await response
-        // await new BattleObserver().waitForBattleOrMonsterChange()
+        // await response
+        await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
         if (await this.isWeatherActive()) return true
@@ -4336,10 +4345,10 @@ class CaptureAction {
 
       await GameUtils.delayAttack()
       if (this.attackCapture) {
-        const response = waitForXHR('/do/fight/attack')
+        // const response = waitForXHR('/do/fight/attack')
         this.attackCapture.click()
-        await response
-        // await new BattleObserver().waitForBattleOrMonsterChange()
+        // await response
+        await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
         if (this.enemy.hp <= this.criticalHPEnemy) return true
@@ -4363,11 +4372,11 @@ class CaptureAction {
       this.actualAttack = result.actualAttack
 
       await GameUtils.delayAttack()
-      const response = waitForXHR('/do/fight/attack')
+      // const response = waitForXHR('/do/fight/attack')
       if (this.statusAttack) {
         this.statusAttack.click()
-        await response
-        // await new BattleObserver().waitForBattleOrMonsterChange()
+        // await response
+        await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
 
@@ -4394,6 +4403,7 @@ class CaptureAction {
     await new BattleObserver().waitForBattleOrMonsterChange()
     if (!BattleState.isBattleActive()) {
       this.hasCountCapture()
+      if (settings.get('abilityCapture') !== '') await this.searchAbility()
       return false
     }
     this.tauntCounter++
@@ -4449,17 +4459,29 @@ class CaptureAction {
       (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
     )
   }
+  async openMenu() {
+    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    if (btnOpen.classList.contains('active')) btnOpen.click()
+
+    // const response = waitForXHR('/do/pokes/load/team')
+    btnOpen.click()
+
+    document.querySelector(' .divDockPanels').style.display = 'none'
+    await this.waitMenuTeam()
+    return btnOpen
+  }
   async setMonster() {
     if (!settings.get('monsterCapture')) {
       return true
     }
 
-    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    btnOpen.click()
+    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    // btnOpen.click()
 
-    btnOpen.classList.remove('active')
-    document.querySelector(' .divDockPanels').style.display = 'none'
-    await this.waitMenuTeam()
+    // btnOpen.classList.remove('active')
+    // document.querySelector(' .divDockPanels').style.display = 'none'
+    // await this.waitMenuTeam()
+    await this.openMenu()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
@@ -4493,12 +4515,15 @@ class CaptureAction {
   }
 
   async blockTransfer() {
-    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    const response = waitForXHR('/do/pokes/load/team')
-    btnOpen.click()
+    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    // if (btnOpen.classList.contains('active')) btnOpen.click()
 
-    document.querySelector(' .divDockPanels').style.display = 'none'
-    await this.waitMenuTeam()
+    const response = waitForXHR('/do/pokes/load/team')
+    // btnOpen.click()
+
+    // document.querySelector(' .divDockPanels').style.display = 'none'
+    // await this.waitMenuTeam()
+    const btnOpen = await this.openMenu()
 
     const data = await response
 
@@ -4507,12 +4532,14 @@ class CaptureAction {
     btnOpen.click()
   }
   async hasCountCapture() {
-    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    btnOpen.click()
+    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    // if (btnOpen.classList.contains('active')) btnOpen.click()
+    // btnOpen.click()
 
-    document.querySelector(' .divDockPanels').style.display = 'none'
+    // document.querySelector(' .divDockPanels').style.display = 'none'
 
-    await this.waitMenuTeam()
+    // await this.waitMenuTeam()
+    const btnOpen = await this.openMenu()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard').length
     const calc = monsters - arrCapture.length
@@ -4524,6 +4551,39 @@ class CaptureAction {
     }
     btnOpen.click()
     return
+  }
+  async searchAbility() {
+    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+    // if (btnOpen.classList.contains('active')) btnOpen.click()
+    // btnOpen.click()
+
+    // document.querySelector(' .divDockPanels').style.display = 'none'
+
+    // await this.waitMenuTeam()
+    const btnOpen = await this.openMenu()
+
+    const ability = document
+      .querySelector('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard:last-of-type .maincardContainer .info .divAbility')
+      .textContent.trim()
+      .toLowerCase()
+
+    if (
+      settings
+        .get('abilityCapture')
+        .toLowerCase()
+        .split(',')
+        .some((a) => a.trim() === ability)
+    ) {
+      soundController.play('shine')
+      showNotification('Поймать', 'Пойман с нужной абилкой.')
+      bot.stop()
+      toggleConfirmInterceptor(false)
+      GameUtils.btnWild(false)
+      btnOpen.click()
+      return true
+    }
+    btnOpen.click()
+    return false
   }
 }
 //
