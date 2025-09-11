@@ -185,11 +185,11 @@ function showNotification(title, text) {
   }
 
   if (Notification.permission === 'granted') {
-    new Notification(title, { body: text })
+    new Notification(title, { body: text, silent: false })
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then((permission) => {
       if (permission === 'granted') {
-        new Notification(title, { body: text })
+        new Notification(title, { body: text, silent: false })
       }
     })
   }
@@ -3042,58 +3042,6 @@ containerDrop.append(noneDrop)
 mainMenu.append(containerDrop)
 
 document.body.append(btnToggle, mainMenu)
-
-// class Draggle {
-//   constructor(menuDrop) {
-//     this.pos = { x: 0, y: 0 }
-//     this.shift = { x: 0, y: 0 }
-//     this.menuDrop = menuDrop
-//     this.wrapper = document.createElement('div')
-//     this.wrapper.classList.add('draggle-container')
-
-//     this.menuDrop.append(this.wrapper)
-//     // биндим методы
-//     this.onMove = this.onMove.bind(this)
-//     this.onUp = this.onUp.bind(this)
-
-//     this.wrapper.addEventListener('pointerdown', this.onDown.bind(this))
-//   }
-
-//   onDown(e) {
-//     e.preventDefault()
-//     this.menuDrop.style.transition = 'none'
-
-//     this.shift.x = e.clientX - this.pos.x
-//     this.shift.y = e.clientY - this.pos.y
-
-//     this.wrapper.setPointerCapture(e.pointerId)
-
-//     this.wrapper.addEventListener('pointermove', this.onMove)
-//     this.wrapper.addEventListener('pointerup', this.onUp)
-//   }
-
-//   onMove(e) {
-//     this.pos.x = e.clientX - this.shift.x
-//     this.pos.y = e.clientY - this.shift.y
-
-//     if (!this.raf) {
-//       this.raf = requestAnimationFrame(() => {
-//         this.menuDrop.style.setProperty('--drag-x', this.pos.x + 'px')
-//         this.menuDrop.style.setProperty('--drag-y', this.pos.y + 'px')
-//         this.raf = null
-//       })
-//     }
-//   }
-
-//   onUp(e) {
-//     this.menuDrop.style.transition = ''
-//     this.wrapper.releasePointerCapture(e.pointerId)
-//     this.wrapper.removeEventListener('pointermove', this.onMove)
-//     this.wrapper.removeEventListener('pointerup', this.onUp)
-//   }
-// }
-
-// const draggle = new Draggle(containerDrop)
 class ThemeController {
   constructor() {
     this.systemTheme = settings.get('themeMode')
@@ -4546,6 +4494,7 @@ class CaptureAction {
 
     if (calc >= +settings.get('userCountCapture') || monsters === 6) {
       btnOpen.click()
+
       new HealAction().execute(true)
       return
     }
@@ -4570,9 +4519,9 @@ class CaptureAction {
     if (
       settings
         .get('abilityCapture')
-        .toLowerCase()
-        .split(',')
-        .some((a) => a.trim() === ability)
+        ?.toLowerCase()
+        ?.split(',')
+        ?.some((a) => a.trim() === ability)
     ) {
       soundController.play('shine')
       showNotification('Поймать', 'Пойман с нужной абилкой.')
