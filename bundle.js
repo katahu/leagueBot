@@ -227,18 +227,6 @@ function waitForXHR(url, timeout = 10000) {
 }
 // cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
-
-// git add .
-// git commit -m "Release version to 1.0.10"
-// git push origin main
-
-// git tag -d v1.0.10
-// git push origin :refs/tags/v1.0.10
-
-// git tag v1.0.10
-// git push origin v1.0.10
-
-// npm run build -- --publish always
 class TimePicker {
   constructor() {
     this.ITEM_HEIGHT = 40
@@ -4350,7 +4338,7 @@ class CaptureAction {
     if (!this.foundBall) return false
     await new BattleObserver().waitForBattleOrMonsterChange()
     if (!BattleState.isBattleActive()) {
-      this.hasCountCapture()
+      await this.hasCountCapture()
       if (settings.get('abilityCapture') !== '') await this.searchAbility()
       return false
     }
@@ -4476,6 +4464,7 @@ class CaptureAction {
     const data = await response
 
     arrCapture.push(...data.object.map((p) => p.id))
+    console.log(arrCapture.length)
 
     btnOpen.click()
   }
@@ -4488,6 +4477,7 @@ class CaptureAction {
 
     // await this.waitMenuTeam()
     const btnOpen = await this.openMenu()
+    console.log('просчёт текущего кол мобов в тиме после ловли')
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard').length
     const calc = monsters - arrCapture.length

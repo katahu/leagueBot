@@ -558,7 +558,6 @@
 
 .table .table-header {
   display: flex;
-  flex-direction: column;
   gap: 5px;
   margin-bottom: 5px;
 }
@@ -688,6 +687,9 @@
 @media screen and (max-width: 480px) {
   .table .table-content {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .table-header {
+    flex-direction: column;
   }
 }
 @media screen and (max-width: 768px) {
