@@ -558,7 +558,7 @@
 
 .table .table-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 5px;
   margin-bottom: 5px;
 }

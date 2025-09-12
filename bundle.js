@@ -3105,12 +3105,12 @@ class HealAction {
       for (const route of routes) {
         if (Array.isArray(route[0])) {
           for (const subRoute of route) {
-            if (subRoute.includes(btnId)) {
+            if (subRoute[0] === btnId) {
               return route
             }
           }
         } else {
-          if (route.includes(btnId)) {
+          if (route[0] === btnId) {
             return route
           }
         }
