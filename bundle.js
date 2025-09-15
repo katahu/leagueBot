@@ -175,6 +175,17 @@ const arrTarget = [
 // }
 // injectConfirmOverride()
 
+async function openTeam() {
+  const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
+  if (btnOpen.classList.contains('active')) btnOpen.click()
+
+  btnOpen.click()
+
+  document.querySelector(' .divDockPanels').style.display = 'none'
+  await new BattleObserver().waitMenuTeam()
+  return btnOpen
+}
+
 function toggleConfirmInterceptor(enabled) {
   window.dispatchEvent(new CustomEvent('toggleConfirmInterceptor', { detail: { enabled } }))
 }
@@ -227,6 +238,18 @@ function waitForXHR(url, timeout = 10000) {
 }
 // cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
+
+// git add .
+// git commit -m "Оптимизирован код открытия команды. Пофикшен баг со сдачей."
+// git push origin main
+
+// git tag -d v1.0.18
+// git push origin :refs/tags/v1.0.18
+
+// git tag v1.0.18
+// git push origin v1.0.18
+
+// npm run build -- --publish always
 class TimePicker {
   constructor() {
     this.ITEM_HEIGHT = 40
@@ -3004,8 +3027,7 @@ const menuButtons = new Button([
   // {
   //   text: 'Тест',
   //   onClick: () => {
-  //     console.log(settings.get('abilityCapture').trim().toLowerCase().split(','))
-  //     console.log(settings.get('abilityCapture').toLowerCase().trim().split(','))
+  //     console.log(BattleState.isAggressiveLocation())
   //   },
   // },
 ])
@@ -3329,10 +3351,7 @@ class HealAction {
   }
   //
   async transferMonster() {
-    const openTeam = document.querySelector('.divDockIcons .divDockIn img[src*="team"]')
-    openTeam.click()
-
-    await this.waitMenuTeam()
+    const btnOpen = await openTeam()
 
     const monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
@@ -3346,14 +3365,11 @@ class HealAction {
     }
 
     arrCapture.length = 0
-    openTeam.click()
+    btnOpen.click()
   }
 
   async transferMonsterAll() {
-    const openTeam = document.querySelector('.divDockIcons .divDockIn img[src*="team"]')
-    openTeam.click()
-
-    await this.waitMenuTeam()
+    const btnOpen = await openTeam()
 
     const monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
     for (const el of monsters) {
@@ -3363,17 +3379,7 @@ class HealAction {
         await GameUtils.delayFast()
       }
     }
-    openTeam.click()
-  }
-
-  async waitMenuTeam() {
-    const menuTeam = document.querySelector('.divDockPanels .panel.panelpokes .divPokeTeam')
-    return this.observer.observe(
-      'waitTeam',
-      menuTeam,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    btnOpen.click()
   }
 }
 class UseItemAction {
@@ -3850,7 +3856,17 @@ class BattleObserver {
       (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
     )
   }
+  async waitMenuTeam() {
+    const menuTeam = document.querySelector('.divDockPanels .panel.panelpokes .divPokeTeam')
+    return this.observe(
+      'waitTeam',
+      menuTeam,
+      { childList: true },
+      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
+    )
+  }
 }
+
 class BattleState {
   static isBattleActive() {
     const movesContainer = document.querySelector('#divFightI .moves')
@@ -3870,19 +3886,16 @@ class BattleState {
       if (settings.get('monsterSwapEnabled') === true) {
         return new SwapAction().execute(true) // явно указать что в агро локации вызыва как критически
       }
+      if (settings.get('surrenderEnabled') === true) {
+        return new SurrenderAction().execute()
+      }
       soundController.play('shine')
       showNotification('Внимание', 'Бот в ступоре')
       return
-    } else {
-      if (settings.get('surrenderEnabled') === true && document.querySelector('#divFightData #divFightOptions .agro')) {
-        await new SurrenderAction().execute()
-
-        return new HealAction().execute()
-      } else {
-        soundController.play('shine')
-        showNotification('Внимание', 'Агресивная локация')
-      }
     }
+
+    await new SurrenderAction().execute()
+    return new HealAction().execute()
   }
 }
 //
@@ -3948,6 +3961,7 @@ class AttackAction {
     if (settings.get('nullPP') === false) return GameUtils.afterFight(this.attack)
   }
 }
+
 //
 class LevelUpAction {
   constructor() {
@@ -3984,7 +3998,6 @@ class LevelUpAction {
         await new BattleObserver().openMenuElements()
 
         this.data = await xhrPromise
-
         const monster = this.findMonster()
         if (!monster) return
 
@@ -4018,23 +4031,22 @@ class LevelUpAction {
 
   findMonster() {
     const monsterSearch = +settings.get('monsterUp').replace(/[^\d]/g, '')
-    console.log()
 
     if (!monsterSearch) {
       soundController.play('shine')
+      console.log('нет в памяти')
       showNotification('Прокачать', 'Указанного монстра с собой нет')
       return false
     }
 
     const numberMonster = this.data.object.findIndex((m) => m.id === monsterSearch)
 
-    if (!numberMonster) {
+    if (numberMonster === -1) {
       soundController.play('shine')
       showNotification('Прокачать', 'Указанного монстра с собой нет')
       return false
-    } else {
-      this.lvlMonster = this.data.object[numberMonster].lvl
     }
+    this.lvlMonster = this.data.object[numberMonster].lvl
 
     const monsters = Array.from(document.querySelectorAll('.divContext .divElements .divElement.clickable'))
 
@@ -4093,12 +4105,7 @@ class SwapAction {
       return false
     }
 
-    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    btnOpen.click()
-
-    btnOpen.classList.remove('active')
-    document.querySelector(' .divDockPanels').style.display = 'none'
-    await this.waitMenuTeam()
+    await openTeam()
     await GameUtils.delayFast()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
@@ -4118,15 +4125,6 @@ class SwapAction {
     return false
   }
 
-  async waitMenuTeam() {
-    const menuTeam = document.querySelector(' .divDockPanels .panel.panelpokes .divPokeTeam')
-    return this.observer.observe(
-      'waitTeam',
-      menuTeam,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
-  }
   async waitSwitche() {
     const movePromise = this.observer.observe(
       'switche',
@@ -4199,15 +4197,6 @@ class CaptureAction {
       return new AttackAction().execute(+settings.get('numberAttack'))
     }
 
-    // if (
-    //   !this.isShine &&
-    //   !this.isSuper &&
-    //   settings.get('variableGender') !== 'Все' &&
-    //   this.enemy.gender === CaptureAction.GENDER_SELECTORS[settings.get('variableGender')]
-    // ) {
-    //   return new AttackAction().execute()
-    // }
-
     if (arrCapture.length === 0) await this.blockTransfer()
 
     if (!(await this.setTaunt(true))) {
@@ -4255,9 +4244,7 @@ class CaptureAction {
       await GameUtils.delayAttack()
 
       if (this.weatherAttack) {
-        // const response = waitForXHR('/do/fight/attack')
         this.weatherAttack.click()
-        // await response
         await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
@@ -4281,9 +4268,7 @@ class CaptureAction {
 
       await GameUtils.delayAttack()
       if (this.attackCapture) {
-        // const response = waitForXHR('/do/fight/attack')
         this.attackCapture.click()
-        // await response
         await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
@@ -4308,10 +4293,8 @@ class CaptureAction {
       this.actualAttack = result.actualAttack
 
       await GameUtils.delayAttack()
-      // const response = waitForXHR('/do/fight/attack')
       if (this.statusAttack) {
         this.statusAttack.click()
-        // await response
         await new BattleObserver().waitForBattleOrMonsterChange()
         if (!BattleState.isBattleActive()) return false
         this.tauntCounter++
@@ -4357,17 +4340,16 @@ class CaptureAction {
     const attack = result.attack
 
     if (!attack) {
-      // намешки нету, может быть случайно
+      // наcмешки нету, может быть случайно
       if (this.isShine || this.isSuper) return false
       await new AttackAction().execute(+settings.get('numberAttack'))
       return false
     }
 
     await GameUtils.delayAttack()
-    const response = waitForXHR('/do/fight/attack')
     attack.click()
-    await response
-    // await new BattleObserver().waitForBattleOrMonsterChange()
+
+    await new BattleObserver().waitForBattleOrMonsterChange()
 
     this.tauntCounter = 0
     return true
@@ -4386,38 +4368,13 @@ class CaptureAction {
     return false
   }
   //
-  async waitMenuTeam() {
-    const menuTeam = document.querySelector(' .divDockPanels .panel.panelpokes .divPokeTeam')
-    return this.observer.observe(
-      'waitTeam',
-      menuTeam,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
-  }
-  async openMenu() {
-    const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    if (btnOpen.classList.contains('active')) btnOpen.click()
 
-    // const response = waitForXHR('/do/pokes/load/team')
-    btnOpen.click()
-
-    document.querySelector(' .divDockPanels').style.display = 'none'
-    await this.waitMenuTeam()
-    return btnOpen
-  }
   async setMonster() {
     if (!settings.get('monsterCapture')) {
       return true
     }
 
-    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    // btnOpen.click()
-
-    // btnOpen.classList.remove('active')
-    // document.querySelector(' .divDockPanels').style.display = 'none'
-    // await this.waitMenuTeam()
-    await this.openMenu()
+    const btnOpen = await openTeam()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
@@ -4432,8 +4389,10 @@ class CaptureAction {
 
           if (hp <= +settings.get('criticalHP')) {
             BattleState.handleCriticalSituation()
+            btnOpen.click()
             return false
           }
+          btnOpen.click()
           return true
         }
 
@@ -4451,33 +4410,18 @@ class CaptureAction {
   }
 
   async blockTransfer() {
-    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    // if (btnOpen.classList.contains('active')) btnOpen.click()
-
     const response = waitForXHR('/do/pokes/load/team')
-    // btnOpen.click()
 
-    // document.querySelector(' .divDockPanels').style.display = 'none'
-    // await this.waitMenuTeam()
-    const btnOpen = await this.openMenu()
+    const btnOpen = await openTeam()
 
     const data = await response
 
     arrCapture.push(...data.object.map((p) => p.id))
-    console.log(arrCapture.length)
 
     btnOpen.click()
   }
   async hasCountCapture() {
-    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    // if (btnOpen.classList.contains('active')) btnOpen.click()
-    // btnOpen.click()
-
-    // document.querySelector(' .divDockPanels').style.display = 'none'
-
-    // await this.waitMenuTeam()
-    const btnOpen = await this.openMenu()
-    console.log('просчёт текущего кол мобов в тиме после ловли')
+    const btnOpen = await openTeam()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard').length
     const calc = monsters - arrCapture.length
@@ -4492,14 +4436,7 @@ class CaptureAction {
     return
   }
   async searchAbility() {
-    // const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    // if (btnOpen.classList.contains('active')) btnOpen.click()
-    // btnOpen.click()
-
-    // document.querySelector(' .divDockPanels').style.display = 'none'
-
-    // await this.waitMenuTeam()
-    const btnOpen = await this.openMenu()
+    const btnOpen = await openTeam()
 
     const ability = document
       .querySelector('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard:last-of-type .maincardContainer .info .divAbility')
@@ -4815,13 +4752,7 @@ class dropSpecialAction {
     while (true) {
       let btnOpen = null
       let monsters = null
-      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-      btnOpen.click()
-
-      btnOpen.classList.remove('active')
-      document.querySelector('.divDockPanels').style.display = 'none'
-
-      await this.waitMenuTeam()
+      btnOpen = await openTeam()
 
       monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
@@ -4848,12 +4779,7 @@ class dropSpecialAction {
       }
 
       await GameUtils.delayAttack()
-      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-      btnOpen.click()
-
-      btnOpen.classList.remove('active')
-      document.querySelector(' .divDockPanels').style.display = 'none'
-      await this.waitMenuTeam()
+      btnOpen = await openTeam()
 
       monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
       for (const el of monsters) {
@@ -4910,13 +4836,7 @@ class dropSpecialAction {
     while (true) {
       let btnOpen = null
       let monsters = null
-      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-      btnOpen.click()
-
-      btnOpen.classList.remove('active')
-      document.querySelector('.divDockPanels').style.display = 'none'
-
-      await this.waitMenuTeam()
+      btnOpen = await openTeam()
 
       monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
@@ -4948,12 +4868,7 @@ class dropSpecialAction {
       }
 
       await GameUtils.delayAttack()
-      btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-      btnOpen.click()
-
-      btnOpen.classList.remove('active')
-      document.querySelector(' .divDockPanels').style.display = 'none'
-      await this.waitMenuTeam()
+      btnOpen = await openTeam()
 
       monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
       for (const el of monsters) {
@@ -4988,11 +4903,7 @@ class dropSpecialAction {
   }
   async setMonster() {
     const btnOpen = document.querySelector(' .divDockIcons .divDockIn img[src*="team"]')
-    btnOpen.click()
-
-    btnOpen.classList.remove('active')
-    document.querySelector(' .divDockPanels').style.display = 'none'
-    await this.waitMenuTeam()
+    btnOpen = await openTeam()
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
     for (const el of monsters) {
@@ -5014,16 +4925,6 @@ class dropSpecialAction {
     showNotification('Дроп шипов', 'Монстр отсутствует')
     return false
   }
-  async waitMenuTeam() {
-    const menuTeam = document.querySelector(' .divDockPanels .panel.panelpokes .divPokeTeam')
-    return this.observer.observe(
-      'waitTeam',
-      menuTeam,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
-  }
-
   async isStatusActive(element) {
     const statusAll = document.querySelectorAll('#divFightH .statusimg')
 
