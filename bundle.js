@@ -240,14 +240,14 @@ function waitForXHR(url, timeout = 10000) {
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "Оптимизирован код открытия команды. Пофикшен баг со сдачей."
+// git commit -m "фикс сдачи при ползунке surrnder"
 // git push origin main
 
-// git tag -d v1.0.18
-// git push origin :refs/tags/v1.0.18
+// git tag -d v1.0.19
+// git push origin :refs/tags/1.0.19
 
-// git tag v1.0.18
-// git push origin v1.0.18
+// git tag v1.0.19
+// git push origin v1.0.19
 
 // npm run build -- --publish always
 class TimePicker {
@@ -1512,6 +1512,7 @@ const DEFAULT_VALUES = {
   criticalHP: '25', // Долже быть number
   nullPP: false, // Отключить восстановление PP
   variableShine: 'Не использовать', // супер убивать или ловить всех
+  surrenderEnabled: false,
   //
   // Монстр/атака для смены
   monsterSwapEnabled: false,
@@ -3028,6 +3029,8 @@ const menuButtons = new Button([
   //   text: 'Тест',
   //   onClick: () => {
   //     console.log(BattleState.isAggressiveLocation())
+
+  //     console.log(settings.get('surrenderEnabled'))
   //   },
   // },
 ])
@@ -4544,12 +4547,13 @@ class BattleActionStrategy {
   }
 
   async surrender() {
-    if (settings.get('surrenderEnabled') === true && document.querySelector('#divFightData #divFightOptions .agro')) {
+    if (settings.get('surrenderEnabled') === true && BattleState.isAggressiveLocation()) {
       return new SurrenderAction().execute()
     }
-    if (document.querySelector('#divFightData #divFightOptions .agro')) {
+    if (BattleState.isAggressiveLocation()) {
       soundController.play('shine')
       showNotification('Внимание', 'Агресивная локация')
+      return
     }
     new SurrenderAction().execute()
   }
