@@ -1,14 +1,14 @@
 const arrTarget = [
-  "Вы уверены, что хотите сдаться?",
-  "Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?",
-  "Вы хотите вернуться на локацию, из которой вы переместились на арену?",
+  'Вы уверены, что хотите сдаться?',
+  'Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?',
+  'Вы хотите вернуться на локацию, из которой вы переместились на арену?',
 ]
 
 ;(function () {
   window.__originalConfirm = window.confirm
   window.useCustomConfirm = false
 
-  window.addEventListener("toggleConfirmInterceptor", (event) => {
+  window.addEventListener('toggleConfirmInterceptor', (event) => {
     window.useCustomConfirm = event.detail.enabled
   })
 
@@ -23,7 +23,7 @@ const arrTarget = [
 // Локации постоянные
 ;(() => {
   const pendingRequests = new Map() // url -> { resolve, timeoutId }
-  const alwaysListenUrl = "/do/loc/go" // URL для постоянного мониторинга
+  const alwaysListenUrl = '/do/loc/go' // URL для постоянного мониторинга
 
   function waitForRequest(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ const arrTarget = [
   }
 
   XMLHttpRequest.prototype.send = function (body) {
-    this.addEventListener("load", () => {
+    this.addEventListener('load', () => {
       try {
         if (!this.responseText) return
         const json = JSON.parse(this.responseText)
@@ -76,11 +76,11 @@ const arrTarget = [
           if (locId !== undefined) {
             window.postMessage(
               {
-                type: "LOC_ID_UPDATE",
+                type: 'LOC_ID_UPDATE',
                 locId: locId,
                 fullData: json,
               },
-              "*"
+              '*'
             )
           }
         }
@@ -92,32 +92,32 @@ const arrTarget = [
   }
 
   // Обработка сообщений от контент-скрипта
-  window.addEventListener("message", async (event) => {
+  window.addEventListener('message', async (event) => {
     if (event.source !== window) return
 
-    if (event.data.type === "WAIT_FOR_REQUEST" && typeof event.data.url === "string") {
+    if (event.data.type === 'WAIT_FOR_REQUEST' && typeof event.data.url === 'string') {
       try {
         const data = await waitForRequest(event.data.url, event.data.timeout)
         window.postMessage(
           {
-            type: "REQUEST_RESOLVED",
-            source: "XHR_MONITOR",
+            type: 'REQUEST_RESOLVED',
+            source: 'XHR_MONITOR',
             requestId: event.data.requestId,
             url: event.data.url,
             response: data,
           },
-          "*"
+          '*'
         )
       } catch (error) {
         window.postMessage(
           {
-            type: "REQUEST_TIMEOUT",
-            source: "XHR_MONITOR",
+            type: 'REQUEST_TIMEOUT',
+            source: 'XHR_MONITOR',
             requestId: event.data.requestId,
             url: event.data.url,
             error: error.message,
           },
-          "*"
+          '*'
         )
       }
     }
@@ -139,8 +139,8 @@ const arrTarget = [
   XMLHttpRequest.prototype.send = function (body) {
     if (!active) return origSend.apply(this, arguments)
 
-    if (this._url && this._url.includes("/do/loc/load")) {
-      this.addEventListener("load", function () {
+    if (this._url && this._url.includes('/do/loc/load')) {
+      this.addEventListener('load', function () {
         if (!active) return
 
         try {
@@ -149,16 +149,16 @@ const arrTarget = [
           // Вызываем внешнюю функцию, объявленную в content script
           window.postMessage(
             {
-              type: "init-data",
+              type: 'init-data',
               ...responseJSON,
             },
-            "*"
+            '*'
           )
 
           // Отключаем перехват
           active = false
         } catch (e) {
-          console.warn("[XHR Interceptor] Ошибка разбора:", e)
+          console.warn('[XHR Interceptor] Ошибка разбора:', e)
         }
       })
     }
@@ -184,6 +184,37 @@ async function openTeam() {
   document.querySelector(' .divDockPanels').style.display = 'none'
   await new BattleObserver().waitMenuTeam()
   return btnOpen
+}
+
+async function btnWild(isActive) {
+  //false отключить, true включить
+  const observer = new BattleObserver()
+  let wait = null
+
+  const btn = document.querySelector('#divInputButtons .btnSwitchWilds') || document.querySelector('#divDockUpper .btnSwitchWilds')
+  if (isActive && !btn.classList.contains('pressed')) {
+    wait = waitForClassChange(observer, btn)
+    btn.click()
+    await wait
+    return
+  }
+  if (isActive && btn.classList.contains('pressed')) return
+  if (!isActive && btn.classList.contains('pressed')) {
+    wait = waitForClassChange(observer, btn)
+    btn.click()
+    await wait
+    return
+  }
+  if (!isActive && !btn.classList.contains('pressed')) return
+
+  function waitForClassChange(observer, target) {
+    return observer.observe(
+      'classChange',
+      target,
+      { attributes: true, attributeFilter: ['class'] },
+      (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'class'
+    )
+  }
 }
 
 function toggleConfirmInterceptor(enabled) {
@@ -236,18 +267,19 @@ function waitForXHR(url, timeout = 10000) {
     )
   })
 }
+
 // cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "фикс сдачи при ползунке surrnder"
+// git commit -m "Оптимизирован код открытия команды. Пофикшен баг со сдачей."
 // git push origin main
 
-// git tag -d v1.0.19
-// git push origin :refs/tags/1.0.19
+// git tag -d v2.4
+// git push origin :refs/tags/v2.4
 
-// git tag v1.0.19
-// git push origin v1.0.19
+// git tag v2.4
+// git push origin v2.4
 
 // npm run build -- --publish always
 class TimePicker {
@@ -438,7 +470,7 @@ class AutoStop {
 
       if (hour === settings.get('hourtimer') && minute >= settings.get('minutetimer')) {
         bot.stop()
-        GameUtils.btnWild(false)
+        await btnWild(false)
 
         this.stop()
 
@@ -1512,12 +1544,15 @@ const DEFAULT_VALUES = {
   criticalHP: '25', // Долже быть number
   nullPP: false, // Отключить восстановление PP
   variableShine: 'Не использовать', // супер убивать или ловить всех
-  surrenderEnabled: false,
   //
   // Монстр/атака для смены
-  monsterSwapEnabled: false,
+  // monsterSwapEnabled: false,
   monsterSwap: '',
   numberAttackSwap: '0',
+  // Добиватель
+  monsterDeathEnabled: false,
+  monsterDeath: '',
+  numberAttackDeath: '0',
 
   //
   // Монстр для прокачки
@@ -1585,6 +1620,40 @@ const DEFAULT_VALUES = {
   minutetimer: '00',
   transferAll: false,
   autoStopEnabled: false,
+
+  /// Комбо наборы
+  comboOne: {
+    oneStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    twoStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    threeStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    fourStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    five: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    six: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+  },
+  comboTwo: {
+    oneStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    twoStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    threeStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    fourStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    five: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    six: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+  },
+  comboThree: {
+    oneStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    twoStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    threeStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    fourStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    five: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    six: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+  },
+  comboFour: {
+    oneStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    twoStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    threeStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    fourStage: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    five: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+    six: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
+  },
 }
 
 class SettingsManager {
@@ -1624,35 +1693,64 @@ class SettingsManager {
     return this.settings
   }
 
+  // === helpers для вложенных ключей ===
+  _resolvePath(obj, path, createMissing = false) {
+    const parts = path.split('.')
+    let cur = obj
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (cur[parts[i]] === undefined) {
+        if (createMissing) cur[parts[i]] = {}
+        else return undefined
+      }
+      cur = cur[parts[i]]
+    }
+    return { obj: cur, key: parts[parts.length - 1] }
+  }
+
   get(key, defaultValue) {
     if (!this.initialized) this.init()
 
-    if (key in this.settings) return this.settings[key]
-    return defaultValue
+    // поддержка вложенных ключей
+    if (key.includes('.')) {
+      const parts = key.split('.')
+      let cur = this.settings
+      for (const part of parts) {
+        if (cur == null || typeof cur !== 'object') return defaultValue
+        cur = cur[part]
+      }
+      return cur === undefined || cur === null || cur === '' ? defaultValue : cur
+    }
+
+    const value = this.settings[key]
+    return value === undefined || value === null || value === '' ? defaultValue : value
   }
 
   set(key, value, saveToStorage = true) {
     if (!this.initialized) this.init()
 
-    this.settings[key] = value
+    if (key.includes('.')) {
+      const rootKey = key.split('.')[0] // верхний уровень
+      let rootObj = this.settings[rootKey] || {}
 
-    if (saveToStorage) {
-      this.setToStorage(key, value)
+      const path = key.slice(rootKey.length + 1) // часть после rootKey
+      const resolved = this._resolvePath(rootObj, path, true)
+      resolved.obj[resolved.key] = value
+
+      this.settings[rootKey] = rootObj
+
+      if (saveToStorage) {
+        this.setToStorage(rootKey, rootObj)
+      } else {
+        this.volatileKeys.add(rootKey)
+      }
     } else {
-      this.volatileKeys.add(key) // ← автоматическая регистрация volatile ключа
+      this.settings[key] = value
+      if (saveToStorage) {
+        this.setToStorage(key, value)
+      } else {
+        this.volatileKeys.add(key)
+      }
     }
-  }
-
-  get(key, defaultValue) {
-    if (!this.initialized) this.init()
-
-    const value = this.settings[key]
-
-    if (value === undefined || value === null || value === '') {
-      return defaultValue
-    }
-
-    return value
   }
 
   saveCategoryToStorage(nameCategory, allMonsters) {
@@ -1661,11 +1759,14 @@ class SettingsManager {
       Частые: 'monstersFight',
       Поймать: 'monstersCapture',
       Сдаться: 'monstersSurrender',
-      Сменить: 'monstersSwitch',
       'Атака 1': 'monstersAttackOne',
       'Атака 2': 'monstersAttackTwo',
       'Атака 3': 'monstersAttackThree',
       'Атака 4': 'monstersAttackFour',
+      'Комбо 1': 'monstersComboOne',
+      'Комбо 2': 'monstersComboTwo',
+      'Комбо 3': 'monstersComboThree',
+      'Комбо 4': 'monstersComboFour',
     }
 
     const key = keyMap[nameCategory]
@@ -1682,23 +1783,6 @@ class SettingsManager {
 
     this.setToStorage(key, [...set])
   }
-
-  createReactiveSettings() {
-    if (!this.initialized) this.init()
-
-    const allKeys = new Set([...Object.keys(DEFAULT_VALUES), ...this.volatileKeys])
-
-    const reactive = {}
-    for (const key of allKeys) {
-      Object.defineProperty(reactive, key, {
-        get: () => this.get(key),
-        set: (value) => this.set(key, value),
-        enumerable: true,
-      })
-    }
-
-    return reactive
-  }
 }
 
 const settings = new SettingsManager()
@@ -1709,11 +1793,14 @@ const allMonsters = {
   Частые: new Set(settings.getFromStorage('monstersFight', [])),
   Поймать: new Set(settings.getFromStorage('monstersCapture', [])),
   Сдаться: new Set(settings.getFromStorage('monstersSurrender', [])),
-  Сменить: new Set(settings.getFromStorage('monstersSwitch', [])),
   'Атака 1': new Set(settings.getFromStorage('monstersAttackOne', [])),
   'Атака 2': new Set(settings.getFromStorage('monstersAttackTwo', [])),
   'Атака 3': new Set(settings.getFromStorage('monstersAttackThree', [])),
   'Атака 4': new Set(settings.getFromStorage('monstersAttackFour', [])),
+  'Комбо 1': new Set(settings.getFromStorage('monstersComboOne', [])),
+  'Комбо 2': new Set(settings.getFromStorage('monstersComboTwo', [])),
+  'Комбо 3': new Set(settings.getFromStorage('monstersComboThree', [])),
+  'Комбо 4': new Set(settings.getFromStorage('monstersComboFour', [])),
 }
 
 let currentLocation = null
@@ -1929,6 +2016,8 @@ class Radio {
 
 class Menu {
   constructor(options) {
+    this.options = options
+
     this.el = document.createElement('div')
     this.el.classList.add('menu-container')
 
@@ -2021,6 +2110,10 @@ class Menu {
       }, 200)
     })
   }
+  update() {
+    this.content.innerHTML = ''
+    this.createItems(this.options.items)
+  }
 }
 
 class Monsters {
@@ -2089,7 +2182,7 @@ class Monsters {
     const nameMonster = monsterEl.textContent
 
     const menu = document.createElement('div')
-    menu.classList.add('switch-menu')
+    menu.classList.add('switch-menu', 'custom-scroll')
 
     const header = document.createElement('div')
     header.classList.add('switch-header')
@@ -2230,7 +2323,136 @@ class Monsters {
     }
   }
 }
+class ComboAction {
+  constructor(options) {
+    this.combo = null
+    this.attacks = null
 
+    this.menu = new Menu({
+      title: options.title,
+      text: 'Действия в комбо выполняются по порядку. \n Если монстр умирает, то пытается выполнить хил.',
+      items: [
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 1', onClick: () => this.openStage('oneStage', options.storage) },
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 2', onClick: () => this.openStage('twoStage', options.storage) },
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 3', onClick: () => this.openStage('threeStage', options.storage) },
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 4', onClick: () => this.openStage('fourStage', options.storage) },
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 5', onClick: () => this.openStage('five', options.storage) },
+        { icon: 'fa-light icons-ellipsis-vertical', text: 'Действие 6', onClick: () => this.openStage('six', options.storage) },
+      ],
+      storage: options.storage,
+    })
+  }
+
+  openStage(stage, storageKey) {
+    this.combo = new Menu({
+      title: `Настройка действия`,
+      text: 'Очистить - удаляет все выбранное действие.',
+      items: [
+        {
+          type: 'radio',
+          options: [
+            { text: 'Атака', value: 'Атака' },
+            { text: 'Сменить', value: 'Сменить' },
+            { text: 'Не использовать', value: 'Не использовать' },
+          ],
+          group: [
+            {
+              name: 'stage',
+              storage: `${storageKey}.${stage}.stage`,
+            },
+          ],
+        },
+        {
+          type: 'input',
+          text: 'Сменить на:',
+          width: '80px',
+          placeholder: 'id монстра',
+          storage: `${storageKey}.${stage}.swap`,
+        },
+        {
+          icon: 'fa-light icons-fight',
+          text: 'Выбор атаки',
+          onClick: () => this.attacks.open(),
+        },
+        {
+          icon: 'fa-light icons-trash-can-list',
+          red: true,
+          text: 'Очистить',
+          onClick: () => {
+            settings.set(`${storageKey}.${stage}.stage`, 'Не использовать')
+            settings.set(`${storageKey}.${stage}.swap`, '')
+            settings.set(`${storageKey}.${stage}.attack`, '0')
+            settings.set(`${storageKey}.${stage}.countAttack`, '1')
+            this.combo.update()
+            this.attacks.update()
+            this.countAttacks.update()
+          },
+        },
+      ],
+    })
+
+    this.attacks = new Menu({
+      title: 'Выбор атаки',
+      items: [
+        {
+          type: 'radio',
+          options: [
+            { text: 'Атака 1', value: '0' },
+            { text: 'Атака 2', value: '1' },
+            { text: 'Атака 3', value: '2' },
+            { text: 'Атака 4', value: '3' },
+          ],
+          group: [
+            {
+              name: 'attack',
+              storage: `${storageKey}.${stage}.attack`,
+            },
+          ],
+        },
+        {
+          icon: 'fa-light icons-database',
+          text: 'Количество атак',
+          onClick: () => this.countAttacks.open(),
+        },
+      ],
+    })
+    this.countAttacks = new Menu({
+      title: 'Количество атак',
+      items: [
+        {
+          type: 'radio',
+          options: [
+            { text: '1', value: '1' },
+            { text: '2', value: '2' },
+            { text: '3', value: '3' },
+            { text: '4', value: '4' },
+            { text: '5', value: '5' },
+            { text: '6', value: '6' },
+            { text: '7', value: '7' },
+            { text: '8', value: '8' },
+            { text: '9', value: '9' },
+            { text: '10', value: '10' },
+            { text: 'До смерти противника', value: '1000000000' },
+          ],
+          group: [
+            {
+              name: 'countAttack',
+              storage: `${storageKey}.${stage}.countAttack`,
+            },
+          ],
+        },
+      ],
+    })
+    this.combo.open()
+  }
+
+  open() {
+    this.menu.open()
+  }
+  close() {
+    this.menu.close()
+  }
+}
 class ModalManager {
   constructor() {
     this.modals = []
@@ -2283,9 +2505,14 @@ const menuFight = new Menu({
       onClick: () => menuAttack.open(),
     },
     {
-      icon: 'fa-light icons-swap',
-      text: 'Сменить/Добить',
-      onClick: () => menuSwitch.open(),
+      icon: 'fa-light icons-bars',
+      text: 'Комбо действия',
+      onClick: () => menuComboAll.open(),
+    },
+    {
+      icon: 'fa-light icons-death',
+      text: 'Добиватель',
+      onClick: () => menuDeath.open(),
     },
     {
       type: 'input',
@@ -2296,19 +2523,10 @@ const menuFight = new Menu({
     },
     {
       type: 'checkbox',
-      text: 'Добивание',
-      storage: 'monsterSwapEnabled',
-    },
-    {
-      type: 'checkbox',
       text: 'Выключить PP',
       storage: 'nullPP',
     },
-    {
-      type: 'checkbox',
-      text: 'Сдаваться в агрессивных локациях',
-      storage: 'surrenderEnabled',
-    },
+
     {
       icon: 'fa-light icons-gear',
       text: 'Настройка шайни/супер',
@@ -2366,26 +2584,77 @@ const menuAttack = new Menu({
     },
   ],
 })
-const menuSwitch = new Menu({
-  title: 'Сменить/Добить монстра',
+const menuComboAll = new Menu({
+  title: 'Комбо действия',
   items: [
+    {
+      icon: 'fa-light icons-list-tree',
+      text: 'Комбо 1',
+      onClick: () => comboOne.open(),
+    },
+    {
+      icon: 'fa-light icons-list-tree',
+      text: 'Комбо 2',
+      onClick: () => comboTwo.open(),
+    },
+    {
+      icon: 'fa-light icons-list-tree',
+      text: 'Комбо 3',
+      onClick: () => comboThree.open(),
+    },
+    {
+      icon: 'fa-light icons-list-tree',
+      text: 'Комбо 4',
+      onClick: () => comboFour.open(),
+    },
+  ],
+})
+
+const comboOne = new ComboAction({
+  title: 'Комбо 1',
+  storage: 'comboOne',
+})
+
+const comboTwo = new ComboAction({
+  title: 'Комбо 2',
+  storage: 'comboTwo',
+})
+
+const comboThree = new ComboAction({
+  title: 'Комбо 3',
+  storage: 'comboThree',
+})
+const comboFour = new ComboAction({
+  title: 'Комбо 4',
+  storage: 'comboFour',
+})
+
+const menuDeath = new Menu({
+  title: 'Добивание',
+  text: 'При смерти основого монстра выбирается этот.',
+  items: [
+    {
+      type: 'input',
+      text: 'Добиватель:',
+      width: '80px',
+      placeholder: 'id монстра',
+      storage: 'monsterDeath',
+    },
     {
       icon: 'fa-light icons-fight',
       text: 'Выбор атаки',
       onClick: () => {
-        menuSwitchAttack.open()
+        menuDeathAttack.open()
       },
     },
     {
-      type: 'input',
-      text: 'Сменить на:',
-      width: '80px',
-      placeholder: 'id монстра',
-      storage: 'monsterSwap',
+      type: 'checkbox',
+      text: 'Добивание',
+      storage: 'monsterDeathEnabled',
     },
   ],
 })
-const menuSwitchAttack = new Menu({
+const menuDeathAttack = new Menu({
   title: 'Выбор атаки',
   items: [
     {
@@ -2398,8 +2667,8 @@ const menuSwitchAttack = new Menu({
       ],
       group: [
         {
-          name: 'swapAttack',
-          storage: 'numberAttackSwap',
+          name: 'DeathAttack',
+          storage: 'numberAttackDeath',
         },
       ],
     },
@@ -2978,7 +3247,7 @@ const menuButtons = new Button([
     icon: 'fa-light icons-fight',
     text: 'Атака',
     onClick: () => {
-      toggleConfirmInterceptor(true), GameUtils.btnWild(true), bot.start()
+      toggleConfirmInterceptor(true), bot.start(), btnWild(true)
     },
   },
   {
@@ -2990,7 +3259,7 @@ const menuButtons = new Button([
     icon: 'fa-light icons-stop',
     text: 'Стоп',
     onClick: () => {
-      bot.stop(), toggleConfirmInterceptor(false), GameUtils.btnWild(false)
+      bot.stop(), toggleConfirmInterceptor(false), btnWild(false)
     },
   },
   {
@@ -3028,9 +3297,9 @@ const menuButtons = new Button([
   // {
   //   text: 'Тест',
   //   onClick: () => {
-  //     console.log(BattleState.isAggressiveLocation())
-
-  //     console.log(settings.get('surrenderEnabled'))
+  //     console.log(settings.get('comboOne'))
+  //     console.log(settings.get('comboThree'))
+  //     console.log(settings.getFromStorage('monstersComboOne', []))
   //   },
   // },
 ])
@@ -3055,6 +3324,8 @@ containerDrop.append(noneDrop)
 mainMenu.append(containerDrop)
 
 document.body.append(btnToggle, mainMenu)
+
+///
 class ThemeController {
   constructor() {
     this.systemTheme = settings.get('themeMode')
@@ -3131,7 +3402,7 @@ class HealAction {
       return null
     }
 
-    await GameUtils.btnWild(false)
+    await btnWild(false)
 
     if (settings.get('tourHealEnabled')) return this.healAreaStage()
 
@@ -3179,7 +3450,7 @@ class HealAction {
       if (BattleState.isBattleActive()) await new SurrenderAction.execute()
     }
 
-    await GameUtils.btnWild(true)
+    await btnWild(true)
   }
   async healTwoRoute(route) {
     const to = route[0][0]
@@ -3205,7 +3476,7 @@ class HealAction {
       await GameUtils.delayHeal()
       if (BattleState.isBattleActive()) await new SurrenderAction.execute()
     }
-    await GameUtils.btnWild(true)
+    await btnWild(true)
   }
   // Внимание на инфекции
   async healStage() {
@@ -3267,7 +3538,7 @@ class HealAction {
 
     if (document.querySelector('#divAlerten .alerten.getting.minus')) await this.teleportArea()
 
-    await GameUtils.btnWild(true)
+    await btnWild(true)
   }
   async teleportArea() {
     document.querySelector('#divDockMenu .divDockIcons .divDockIn img[src*="diary"]').click()
@@ -3470,7 +3741,6 @@ class UseItemAction {
       itemElement.click()
       const confirmButton = document.querySelector('.hint-global .button.withtext')
       confirmButton.click()
-      // нужно проверить устновился или нет
       this.itemIcon.click()
     } else if (this.type === 'ball') {
       itemElement.click()
@@ -3677,14 +3947,21 @@ class GameUtils {
     const [current, max] = pp.split('/').map(Number)
     return { current, max }
   }
-  static afterFight(attackElement) {
+  static async afterFight(attackElement) {
     const { current, max } = GameUtils.getPPValues(attackElement)
     const updatedPP = current - 1
 
-    if (updatedPP <= +settings.get('criticalPP')) return new HealAction().execute()
+    if (updatedPP <= +settings.get('criticalPP')) {
+      new HealAction().execute()
+      return false
+    }
 
     const hp = GameUtils.parsePercentage('#divFightI .progressbar.barHP div')
-    if (hp <= +settings.get('criticalHP')) return new HealAction().execute()
+    if (hp <= +settings.get('criticalHP')) {
+      new HealAction().execute()
+      return false
+    }
+    return true
   }
   static async btnWild(isActive) {
     //false отключить, true включить
@@ -3886,15 +4163,12 @@ class BattleState {
   }
   static async handleCriticalSituation() {
     if (BattleState.isAggressiveLocation()) {
-      if (settings.get('monsterSwapEnabled') === true) {
+      if (settings.get('monsterDeathEnabled') === true) {
         return new SwapAction().execute(true) // явно указать что в агро локации вызыва как критически
-      }
-      if (settings.get('surrenderEnabled') === true) {
-        return new SurrenderAction().execute()
       }
       soundController.play('shine')
       showNotification('Внимание', 'Бот в ступоре')
-      return
+      return false
     }
 
     await new SurrenderAction().execute()
@@ -3936,13 +4210,20 @@ class AttackAction {
     this.actualAttack = null
     this.player = new Player()
     this.manager = new AttackManager(this.player)
+
+    this.attempts = 0
+    this.maxAttempts = null
   }
 
-  async execute(identifier) {
-    while (BattleState.isBattleActive()) {
+  async execute(identifier, attemptsAttack = Infinity) {
+    this.maxAttempts = attemptsAttack
+    while (BattleState.isBattleActive() && this.attempts <= this.maxAttempts) {
       await GameUtils.delayAttack()
 
-      if (this.player.hp <= +settings.get('criticalHP')) return BattleState.handleCriticalSituation()
+      if (this.player.hp <= +settings.get('criticalHP')) {
+        BattleState.handleCriticalSituation()
+        return false
+      }
 
       const result = this.manager.findAttack(identifier)
 
@@ -3951,17 +4232,36 @@ class AttackAction {
       ;(this.attack || this.actualAttack)?.click()
 
       if (!this.attack && !this.actualAttack) {
-        return BattleState.handleCriticalSituation()
+        BattleState.handleCriticalSituation()
+        return false
       }
 
+      this.attempts++
       await new BattleObserver().waitForBattleOrMonsterChange()
+    }
+    console.log(this.player.hp)
+    if (this.player.hp <= +settings.get('criticalHP')) {
+      BattleState.handleCriticalSituation()
+      return false
     }
 
     if (this.actualAttack && settings.get('nullPP') === false) {
-      return new HealAction().execute()
+      if (BattleState.isBattleActive()) {
+        BattleState.handleCriticalSituation()
+        return false
+      }
+      new HealAction().execute()
+      return false
     }
 
-    if (settings.get('nullPP') === false) return GameUtils.afterFight(this.attack)
+    if (settings.get('nullPP') === false) {
+      if (await GameUtils.afterFight(this.attack)) {
+        return true
+      }
+      return false
+    }
+
+    return true
   }
 }
 
@@ -4082,9 +4382,16 @@ class SwapAction {
     this.maxAttempts = 3
   }
 
-  async execute(lose = false) {
+  async execute(identifier, lose = false) {
+    const attackId = +(lose ? settings.get('numberAttackDeath') : identifier)
+
     while (this.attempts < this.maxAttempts) {
-      if (await this.setMonster()) return new AttackAction().execute(+settings.get('numberAttackSwap'))
+      if (await this.setMonster(identifier, lose)) {
+        if (identifier === settings.get('monsterDeath')) {
+          return new AttackAction().execute(attackId)
+        }
+        return true
+      }
 
       await GameUtils.delayAttack()
 
@@ -4096,13 +4403,21 @@ class SwapAction {
         soundController.play('shine')
         showNotification('Сменить', 'Сменить не получилось')
       } else {
-        return BattleState.handleCriticalSituation()
+        if (identifier === settings.get('monsterDeath')) {
+          return BattleState.handleCriticalSituation()
+        }
+        return false
       }
     }
   }
 
-  async setMonster() {
-    if (!settings.get('monsterSwap')) {
+  async setMonster(identifier, lose) {
+    if (lose && !settings.get('monsterDeath')) {
+      soundController.play('shine')
+      showNotification('Добиватель', 'Монстр для добивания отсутствует')
+      return false
+    }
+    if (!identifier) {
       soundController.play('shine')
       showNotification('Сменить', 'Укажите монстра для смены')
       return false
@@ -4111,18 +4426,16 @@ class SwapAction {
     await openTeam()
     await GameUtils.delayFast()
 
+    const targetId = (lose ? settings.get('monsterDeath') : identifier).replace(/[^\d]/g, '')
+
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
     for (const el of monsters) {
-      if (
-        el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-        settings.get('monsterSwap').replace(/[^\d]/g, '')
-      ) {
+      if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === targetId) {
         el.querySelector('.maincardContainer .title .button.justicon').click()
         if (!(await this.waitSwitche())) return false
         return true
       }
     }
-
     soundController.play('shine')
     showNotification('Сменить', 'Монстр для смены отсутствует')
     return false
@@ -4457,7 +4770,7 @@ class CaptureAction {
       showNotification('Поймать', 'Пойман с нужной абилкой.')
       bot.stop()
       toggleConfirmInterceptor(false)
-      GameUtils.btnWild(false)
+      await btnWild(false)
       btnOpen.click()
       return true
     }
@@ -4480,15 +4793,23 @@ class BattleActionStrategy {
       },
       Поймать: this.capture.bind(this),
       Сдаться: this.surrender.bind(this),
-      Сменить: this.switchPokemon.bind(this),
       'Атака 1': () => this.attack(0),
       'Атака 2': () => this.attack(1),
       'Атака 3': () => this.attack(2),
       'Атака 4': () => this.attack(3),
+      'Комбо 1': () => this.combo(settings.get('comboOne')),
+      'Комбо 2': () => this.combo(settings.get('comboTwo')),
+      'Комбо 3': () => this.combo(settings.get('comboThree')),
+      'Комбо 4': () => this.combo(settings.get('comboFour')),
     }
   }
 
   async execute() {
+    if (document.querySelector('#divFightCaptcha').style.display !== 'none') {
+      soundController.play('shine')
+      showNotification('Капча', `Обнаружена капча. Ручное управление.`)
+      return
+    }
     const redMonster = !!document.querySelector(`#divFightH .trainerwild .wildinfo span`)?.classList.contains('rednumber') ?? false
 
     if (settings.get('surrenderTrainer')) {
@@ -4498,15 +4819,21 @@ class BattleActionStrategy {
     for (const [key, set] of Object.entries(allMonsters)) {
       let actualKey = key
       if (set.has(this.enemy.name)) {
-        if (settings.get('vaiableShine') === 'Ловить' && !redMonster) {
+        if (settings.get('variableShine') === 'Ловить' && !redMonster) {
           actualKey = 'Поймать'
+        }
+
+        if ((await this.isShine()) && settings.get('variableShine') === 'Не использовать') {
+          soundController.play('shine')
+          showNotification('Шайни', `Напал шайни ${this.enemy.name}`)
+          return
         }
 
         if (key === 'Поймать') {
           if (redMonster && !this.enemy.name === 'Яркокрыл') {
             actualKey = 'Частые'
           }
-          if (settings.get('vaiableShine') === 'Убивать') {
+          if (settings.get('variableShine') === 'Убивать') {
             actualKey = 'Частые'
           }
         }
@@ -4518,7 +4845,7 @@ class BattleActionStrategy {
             showNotification('Лимит', 'Достигнут лимит монстров')
             return bot.stop()
           }
-          // ДРОП ЯДА
+          // Готовый дроп
           if (settings.get('toxinEnabled') && this.enemy.name === 'Питонстр' && redMonster) {
             countMonsterAll++
             return new dropSpecialAction().toxin()
@@ -4547,9 +4874,6 @@ class BattleActionStrategy {
   }
 
   async surrender() {
-    if (settings.get('surrenderEnabled') === true && BattleState.isAggressiveLocation()) {
-      return new SurrenderAction().execute()
-    }
     if (BattleState.isAggressiveLocation()) {
       soundController.play('shine')
       showNotification('Внимание', 'Агресивная локация')
@@ -4631,10 +4955,6 @@ class BattleActionStrategy {
     }
     return new CaptureAction().execute()
   }
-
-  switchPokemon() {
-    return new SwapAction().execute()
-  }
   levelUp() {
     if (settings.get('weatherLimitEnable') === true) {
       if (
@@ -4653,6 +4973,36 @@ class BattleActionStrategy {
   }
   attack(index) {
     return new AttackAction().execute(index)
+  }
+  async combo(objCombo) {
+    // Преобразуем объект в массив стадий и убираем "Не использовать"
+    const stages = ['oneStage', 'twoStage', 'threeStage', 'fourStage']
+      .map((key) => objCombo[key])
+      .filter((stage) => stage.stage !== 'Не использовать')
+
+    // Запускаем рекурсивную обработку
+    return this.executeStageRecursive(stages)
+  }
+
+  async executeStageRecursive(stages, index = 0) {
+    if (index >= stages.length) return true
+
+    const { stage, attack, countAttack, swap } = stages[index]
+    let result = false
+
+    if (stage === 'Атака') {
+      result = await new AttackAction().execute(+attack, +countAttack)
+    } else if (stage === 'Сменить') {
+      result = await new SwapAction().execute(swap)
+    }
+
+    if (!result) {
+      console.log(`Этап ${index + 1} (${stage}) не выполнен — прерывание комбо`)
+      return false
+    }
+
+    // console.log(`Этап ${index + 1} (${stage}) выполнен`)
+    return this.executeStageRecursive(stages, index + 1)
   }
 
   async isShine() {

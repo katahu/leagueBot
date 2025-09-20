@@ -157,6 +157,30 @@
 
 .icons-alarm-stop::before {
   content: "\f845";
+}
+
+.icons-plus::before {
+  content: "+";
+}
+
+.icons-death::before {
+  content: "\f54c";
+}
+
+.icons-list-tree::before {
+  content: "\e1d2";
+}
+
+.icons-trash-can-list::before {
+  content: "\e2ab";
+}
+
+.icons-ellipsis-vertical::before {
+  content: "\f39c";
+}
+
+.icons-database::before {
+  content: "\f1c0";
 }:root {
   --spacing-s: 0.25rem;
   --spacing-md: 0.5rem;
@@ -557,13 +581,13 @@
 }
 
 .table .table-header {
-  display: flex;
+  display: inline-flex;
   gap: 5px;
   margin-bottom: 5px;
 }
 .table .table-content {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 10px;
 }
 .table .table-content .category {
@@ -604,6 +628,7 @@
   text-align: center;
   max-width: -moz-max-content;
   max-width: max-content;
+  max-height: 55vh;
   border-radius: var(--radius-md);
   background-color: var(--color-background-switch);
   box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
