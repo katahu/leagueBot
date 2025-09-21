@@ -272,14 +272,14 @@ function waitForXHR(url, timeout = 10000) {
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "Оптимизирован код открытия команды. Пофикшен баг со сдачей."
+// git commit -m "Добавлены: комбо атаки, проверка на капчу. Изменена кнопка с дикими и фикшена. Фиксы: исправлена переменная при котором шайни игнорировался"
 // git push origin main
 
-// git tag -d v2.4
-// git push origin :refs/tags/v2.4
+// git tag -d v2.6
+// git push origin :refs/tags/v2.6
 
-// git tag v2.4
-// git push origin v2.4
+// git tag v2.6
+// git push origin v2.6
 
 // npm run build -- --publish always
 class TimePicker {
@@ -3297,9 +3297,7 @@ const menuButtons = new Button([
   // {
   //   text: 'Тест',
   //   onClick: () => {
-  //     console.log(settings.get('comboOne'))
-  //     console.log(settings.get('comboThree'))
-  //     console.log(settings.getFromStorage('monstersComboOne', []))
+  //     console.log(settings.getFromStorage('monstersSurrender', []))
   //   },
   // },
 ])
@@ -4818,8 +4816,9 @@ class BattleActionStrategy {
 
     for (const [key, set] of Object.entries(allMonsters)) {
       let actualKey = key
+
       if (set.has(this.enemy.name)) {
-        if (settings.get('variableShine') === 'Ловить' && !redMonster) {
+        if (settings.get('variableShine') === 'Ловить' && (await this.isShine()) && !redMonster) {
           actualKey = 'Поймать'
         }
 
