@@ -181,6 +181,14 @@
 
 .icons-database::before {
   content: "\f1c0";
+}
+
+.icons-broom-wide::before {
+  content: "\e5d1";
+}
+
+.icons-check::before {
+  content: "\f00c";
 }:root {
   --spacing-s: 0.25rem;
   --spacing-md: 0.5rem;
@@ -1033,4 +1041,48 @@
 .timer-container .timer-result {
   font-size: 1rem;
   margin-top: var(--spacing-md);
+}
+
+.capture-container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-table);
+  height: 15vh;
+  padding: var(--spacing-s);
+  border: 1px solid var(--color-separator);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-s);
+}
+.capture-container .category-item-none {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  color: var(--color-icon);
+  min-height: 1.5rem;
+}
+.capture-container .category-item {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  cursor: pointer;
+  min-height: 1.5rem;
+  padding: 0 var(--spacing-md);
+  border-radius: var(--radius-md);
+  border-bottom: 1px solid var(--color-separator);
+}
+.capture-container .category-item:hover {
+  background-color: var(--color-hover);
+}
+.capture-container .category-item i {
+  margin-left: auto;
+  color: var(--color-icon);
+}
+.capture-container .capture-item {
+  display: flex;
+  gap: 0.5rem;
+}
+.capture-container .capture-item .capture-ball-container {
+  cursor: pointer;
 }

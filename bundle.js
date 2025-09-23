@@ -272,14 +272,14 @@ function waitForXHR(url, timeout = 10000) {
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "Добавлены: комбо атаки, проверка на капчу. Изменена кнопка с дикими и фикшена. Фиксы: исправлена переменная при котором шайни игнорировался"
+// git commit -m "Добавлен сброс монстров в таблице, для каждого моба который в ловле можно выбрать свой бол. Фикс с шайни что бы мог ловить первоначально"
 // git push origin main
 
-// git tag -d v2.6
-// git push origin :refs/tags/v2.6
+// git tag -d v2.7
+// git push origin :refs/tags/v2.7
 
-// git tag v2.6
-// git push origin v2.6
+// git tag v2.7
+// git push origin v2.7
 
 // npm run build -- --publish always
 class TimePicker {
@@ -1376,6 +1376,7 @@ const setAutoSetting = new Set([
   'Дроздор',
   'Дроздун',
   'Ополоз',
+  'Яркокрыл',
   'Гюрзар',
   'Ваттон',
   'Кроттор',
@@ -1538,7 +1539,12 @@ const setAutoSetting = new Set([
   'Льдинкус',
 ])
 
+let countMonsterAll = 0
+let countMonsterHour = 0
+
 const DEFAULT_VALUES = {
+  //
+
   numberAttack: '0', // Долже быть number
   criticalPP: '0', // Долже быть number
   criticalHP: '25', // Долже быть number
@@ -1574,6 +1580,7 @@ const DEFAULT_VALUES = {
   attackCapture: 'Сломанный меч',
   attackWeather: 'Не использовать',
   attackStatus: 'Колыбельная',
+  specialBalls: {},
   monsterBall: '1',
   captureSemant: '',
   captureYarkokryl: '',
@@ -1710,7 +1717,6 @@ class SettingsManager {
   get(key, defaultValue) {
     if (!this.initialized) this.init()
 
-    // поддержка вложенных ключей
     if (key.includes('.')) {
       const parts = key.split('.')
       let cur = this.settings
@@ -1729,10 +1735,10 @@ class SettingsManager {
     if (!this.initialized) this.init()
 
     if (key.includes('.')) {
-      const rootKey = key.split('.')[0] // верхний уровень
+      const rootKey = key.split('.')[0]
       let rootObj = this.settings[rootKey] || {}
 
-      const path = key.slice(rootKey.length + 1) // часть после rootKey
+      const path = key.slice(rootKey.length + 1)
       const resolved = this._resolvePath(rootObj, path, true)
       resolved.obj[resolved.key] = value
 
@@ -1782,6 +1788,31 @@ class SettingsManager {
     }
 
     this.setToStorage(key, [...set])
+  }
+  removeCategoryFromStorage(nameCategory) {
+    const keyMap = {
+      Редкие: 'monstersAll',
+      Частые: 'monstersFight',
+      Поймать: 'monstersCapture',
+      Сдаться: 'monstersSurrender',
+      'Атака 1': 'monstersAttackOne',
+      'Атака 2': 'monstersAttackTwo',
+      'Атака 3': 'monstersAttackThree',
+      'Атака 4': 'monstersAttackFour',
+      'Комбо 1': 'monstersComboOne',
+      'Комбо 2': 'monstersComboTwo',
+      'Комбо 3': 'monstersComboThree',
+      'Комбо 4': 'monstersComboFour',
+    }
+
+    const key = keyMap[nameCategory]
+    if (!key) return
+
+    try {
+      localStorage.removeItem(key)
+    } catch (e) {
+      console.error('Ошибка удаления из хранилища:', e)
+    }
   }
 }
 
@@ -2081,6 +2112,9 @@ class Menu {
         case 'timer':
           this.content.append(new TimePicker().container)
           break
+        case 'ballSpecial':
+          this.content.append(new BallSpecial().el)
+          break
         default:
           this.content.append(new Button(item).el)
           break
@@ -2135,11 +2169,38 @@ class Monsters {
       text: 'Автонастройка',
       onClick: () => this.autoSetting(),
     })
+    const btnReset = new Button({
+      icon: 'fa-light icons-broom-wide',
+      text: 'Сброс',
+      onClick: () => {
+        const menuReset = new Menu({
+          title: 'Подтверждение сброса',
+          text: 'Вы уверены, что хотите сбросить настройки монстров?',
+          items: [
+            {
+              icon: 'fa-light icons-check',
+              text: 'Да',
+              red: true,
+              onClick: () => {
+                this.reset()
+                menuReset.close()
+              },
+            },
+            {
+              icon: 'fa-light icons-xmark',
+              text: 'Нет',
+              onClick: () => menuReset.close(),
+            },
+          ],
+        })
+        menuReset.open()
+      },
+    })
 
     this.content = document.createElement('div')
     this.content.classList.add('table-content', 'custom-scroll')
 
-    this.header.append(searchInput.el, autosSetting.el)
+    this.header.append(searchInput.el, autosSetting.el, btnReset.el)
     this.table.append(this.header, this.content)
 
     this.categoryMap = {}
@@ -2228,6 +2289,14 @@ class Monsters {
       this.modalRef.close()
     })
 
+    const ballsSettings = settings.get('specialBalls', {})
+    for (const monster of Object.keys(ballsSettings)) {
+      if (!allMonsters['Поймать'].has(monster)) {
+        delete ballsSettings[monster]
+      }
+    }
+    settings.set('ballsSettings', ballsSettings)
+
     backdrop.append(menu)
     menu.append(header, content)
     this.table.append(backdrop)
@@ -2297,7 +2366,20 @@ class Monsters {
       frequentContainer.append(item)
     }
   }
+  reset() {
+    for (const [key, set] of Object.entries(allMonsters)) {
+      set.clear()
+      settings.removeCategoryFromStorage(key)
+    }
 
+    for (const monster of arrMonstersAll) {
+      allMonsters['Редкие'].add(monster)
+    }
+    settings.saveCategoryToStorage('Редкие', allMonsters)
+
+    this.content.innerHTML = ''
+    this.initCategories()
+  }
   searchMonster(val) {
     const query = val.toLowerCase()
     const containersWithMatches = new Map()
@@ -2453,6 +2535,94 @@ class ComboAction {
     this.menu.close()
   }
 }
+class BallSpecial {
+  constructor() {
+    this.el = document.createElement('div')
+    this.el.classList.add('capture-container', 'custom-scroll')
+    this.createElement()
+  }
+
+  createElement() {
+    const ballsSettings = settings.get('specialBalls', {})
+    for (const monster of Object.keys(ballsSettings)) {
+      if (!allMonsters['Поймать'].has(monster)) {
+        delete ballsSettings[monster]
+      }
+    }
+    settings.set('ballsSettings', ballsSettings)
+
+    allMonsters['Поймать'].forEach((m) => {
+      const item = document.createElement('div')
+      item.classList.add('category-item')
+      item.textContent = m
+
+      const i = document.createElement('i')
+      i.classList.add('fa-light', 'icons-ball')
+
+      if (!ballsSettings[m]) {
+        ballsSettings[m] = settings.get('monsterBall') // берем дефолт
+        settings.set('specialBalls', ballsSettings)
+      }
+
+      const menu = new Menu({
+        title: `Выбор монстробола для ${m}`,
+        items: [
+          {
+            type: 'radio',
+            options: [
+              { text: 'Монстробол', value: '1' },
+              { text: 'Гритбол', value: '2' },
+              { text: 'Мастербол', value: '3' },
+              { text: 'Ультрабол', value: '4' },
+              { text: 'Даркбол', value: '13' },
+              { text: 'Супердаркбол', value: '18' },
+              { text: 'Браконьера', value: '30' },
+              { text: 'Люксбол', value: '5' },
+              { text: 'Френдбол', value: '7' },
+              { text: 'Лавбол', value: '9' },
+              { text: 'Фастбол', value: '6' },
+              { text: 'Трансбол', value: '16' },
+              { text: 'Нестбол', value: '12' },
+              { text: 'Багбол', value: '101' },
+              { text: 'Блэкбол', value: '102' },
+              { text: 'Электробол', value: '104' },
+              { text: 'Файтбол', value: '105' },
+              { text: 'Фаербол', value: '106' },
+              { text: 'Флайбол', value: '107' },
+              { text: 'Гостбол', value: '108' },
+              { text: 'Грасбол', value: '109' },
+              { text: 'Граундбол', value: '110' },
+              { text: 'Айсбол', value: '111' },
+              { text: 'Нормобол', value: '112' },
+              { text: 'Токсикбол', value: '113' },
+              { text: 'Псибол', value: '114' },
+              { text: 'Стоунбол', value: '115' },
+              { text: 'Стилбол', value: '116' },
+              { text: 'Дайвбол', value: '117' },
+              { text: 'Фейбол', value: '118' },
+            ],
+            group: [{ name: `${m}.ball`, storage: `specialBalls.${m}` }],
+          },
+        ],
+      })
+
+      item.addEventListener('click', () => {
+        document.body.append(menu.el)
+        menu.open()
+      })
+
+      item.append(i)
+      this.el.append(item)
+    })
+
+    if (Object.keys(ballsSettings).length === 0) {
+      const none = document.createElement('div')
+      none.classList.add('category-item-none')
+      none.textContent = 'Нет монстров для ловли'
+      this.el.append(none)
+    }
+  }
+}
 class ModalManager {
   constructor() {
     this.modals = []
@@ -2546,7 +2716,7 @@ const menuFight = new Menu({
 })
 const menuShine = new Menu({
   title: 'Настройка шайни',
-  text: 'Убивать: всех shine/super даже доступных для ловли.\n Ловить: всех shine/super доступных для ловли. \n Эта настройка приоритетнее таблицы!',
+  text: 'Убивать: всех shine/super даже доступных для ловли.\n Ловить: всех shine/super доступных для ловли.\n Не использовать: при каждом shine/super будет оставаться.\n Эта настройка приоритетнее таблицы!',
   items: [
     {
       type: 'radio',
@@ -2779,23 +2949,37 @@ const menuCapture = new Menu({
       storage: 'abilityCapture',
     },
     {
-      icon: 'fa-light icons-gear',
+      icon: 'fa-light icons-fight',
       text: 'Выбор атак',
       onClick: () => menuCaputerAttacks.open(),
     },
     {
       icon: 'fa-light icons-ball',
-      text: 'Выбор монстроболла',
+      text: 'Выбор монстробола',
       onClick: () => menuMonsterBall.open(),
+    },
+    {
+      icon: 'fa-light icons-ball',
+      text: 'Специальные монстроболы',
+      onClick: () => {
+        new Menu({
+          title: 'Специальные монстроболы',
+          text: 'Для каждого монстра можно выбрать свой бол для ловли.',
+          items: [{ type: 'ballSpecial' }],
+        }).open()
+      },
     },
     {
       icon: 'fa-light icons-spider',
       text: 'Поймать Яркокрыла или Семанта',
-      onClick: () => menuSpecialCapture.open(),
+      onClick: () => {
+        menuSpecialCapture.open()
+      },
     },
     //
   ],
 })
+// const speBallMenu =
 const menuCaputerAttacks = new Menu({
   title: 'Выбор атак',
   text: 'Для монстров: Эни, Сенс первый монстр с Насмешкой.',
@@ -2879,7 +3063,7 @@ const menuCaptureWeather = new Menu({
   ],
 })
 const menuMonsterBall = new Menu({
-  title: 'Выбор монстроболла',
+  title: 'Выбор монстробола',
   items: [
     {
       type: 'radio',
@@ -3297,7 +3481,7 @@ const menuButtons = new Button([
   // {
   //   text: 'Тест',
   //   onClick: () => {
-  //     console.log(settings.getFromStorage('monstersSurrender', []))
+  //     // console.log(settings.get('specialBalls'))
   //   },
   // },
 ])
@@ -4161,7 +4345,7 @@ class BattleState {
   }
   static async handleCriticalSituation() {
     if (BattleState.isAggressiveLocation()) {
-      if (settings.get('monsterDeathEnabled') === true) {
+      if (settings.get('monsterDeathEnabled')) {
         return new SwapAction().execute(true) // явно указать что в агро локации вызыва как критически
       }
       soundController.play('shine')
@@ -4224,7 +4408,6 @@ class AttackAction {
       }
 
       const result = this.manager.findAttack(identifier)
-
       this.attack = result.attack
       this.actualAttack = result.actualAttack
       ;(this.attack || this.actualAttack)?.click()
@@ -4237,7 +4420,7 @@ class AttackAction {
       this.attempts++
       await new BattleObserver().waitForBattleOrMonsterChange()
     }
-    console.log(this.player.hp)
+
     if (this.player.hp <= +settings.get('criticalHP')) {
       BattleState.handleCriticalSituation()
       return false
@@ -4291,6 +4474,7 @@ class LevelUpAction {
       this.actualAttack = result.actualAttack
 
       await GameUtils.delayAttack()
+
       if (this.attack) {
         this.attack.click()
 
@@ -4299,13 +4483,14 @@ class LevelUpAction {
         await new BattleObserver().openMenuElements()
 
         this.data = await xhrPromise
-        const monster = this.findMonster()
-        if (!monster) return
+        await this.setMonster()
+        // if (!monster) return
 
-        await GameUtils.delayAttack()
-        monster.click()
+        // await GameUtils.delayAttack()
+        // monster.click()
 
-        // await new BattleObserver().waitForBattleOrMonsterChange()
+        // await new BattleObserver().waitForBattleOrMonsterChange()  // ненужен. Проверяем моба уже в currentMonster
+
         const currentMonster = await this.currentMonster()
 
         if ((BattleState.isBattleActive() && currentMonster === +settings.get('monsterUp').replace(/[^\d]/g, '')) || this.player.isPlayer)
@@ -4315,22 +4500,23 @@ class LevelUpAction {
       } else {
         if (!this.actualAttack) {
           soundController.play('shine')
-          showNotification('Прокачка', 'Отсутствует атака для прокачки')
+          showNotification('Прокачка', 'Отсутствуют альтернативные атаки.')
+          return
         }
-        this.actualAttack.click()
 
-        // await new BattleObserver().waitForBattleOrMonsterChange()
-        await waitForXHR('/do/fight/attack')
+        this.actualAttack.click()
+        await new BattleObserver().waitForBattleOrMonsterChange()
+        // await waitForXHR('/do/fight/attack')
         this.attempts++
       }
     }
-    if (this.actualAttack) {
-      return new HealAction().execute()
-    }
+    if (BattleState.isBattleActive() || (BattleState.isBattleActive() && !this.actualAttack)) return BattleState.handleCriticalSituation()
+    if (this.actualAttack) return new HealAction().execute()
+
     return GameUtils.afterFight(this.attack)
   }
 
-  findMonster() {
+  async setMonster() {
     const monsterSearch = +settings.get('monsterUp').replace(/[^\d]/g, '')
 
     if (!monsterSearch) {
@@ -4363,7 +4549,10 @@ class LevelUpAction {
       BattleState.handleCriticalSituation()
       return false
     }
-    return monster
+
+    await GameUtils.delayAttack()
+    monster.click()
+    return
   }
   async currentMonster() {
     const data = await waitForXHR('/do/fight/attack')
@@ -4495,19 +4684,15 @@ class CaptureAction {
     this.maxAttempts = 3
 
     this.isShine = false
-    this.isSuper = false
+    this.currentBall = null
   }
 
-  async execute(isShine = false, isSuper = false, isYarkokryl = false) {
+  async execute(ball = settings.get('monsterBall'), isShine = false, isYarkokryl = false) {
     this.isShine = isShine
-    this.isSuper = isSuper
+    this.currentBall = ball
     this.isYarkokryl = isYarkokryl
-    if (
-      !this.isShine &&
-      !this.isSuper &&
-      settings.get('variableGender') !== 'all' &&
-      this.enemy.gender !== settings.get('variableGender')
-    ) {
+
+    if (!this.isShine && settings.get('variableGender') !== 'all' && this.enemy.gender !== settings.get('variableGender')) {
       return new AttackAction().execute(+settings.get('numberAttack'))
     }
 
@@ -4529,7 +4714,7 @@ class CaptureAction {
       return
     }
     if (BattleState.isBattleActive()) {
-      if (this.isShine || this.isSuper) {
+      if (this.isShine) {
         soundController.play('shine')
         showNotification('Поймать', 'Напал шайни/супер бот в ступоре')
         return
@@ -4625,13 +4810,8 @@ class CaptureAction {
     if (await this.setTaunt()) return false
     if (!BattleState.isBattleActive()) return false
 
-    let item = settings.get('monsterBall') //
-    if (this.isShine) item = '13'
-    if (this.isSuper) item = '18'
-    if (this.isYarkokryl) item = '30'
-
     await GameUtils.delayAttack()
-    this.foundBall = await new UseItemAction({ id: `${item}`, type: 'ball' }).execute()
+    this.foundBall = await new UseItemAction({ id: `${this.currentBall}`, type: 'ball' }).execute()
     if (!this.foundBall) return false
     await new BattleObserver().waitForBattleOrMonsterChange()
     if (!BattleState.isBattleActive()) {
@@ -4655,7 +4835,7 @@ class CaptureAction {
 
     if (!attack) {
       // наcмешки нету, может быть случайно
-      if (this.isShine || this.isSuper) return false
+      if (this.isShine) return false
       await new AttackAction().execute(+settings.get('numberAttack'))
       return false
     }
@@ -4778,8 +4958,6 @@ class CaptureAction {
 }
 //
 
-let countMonsterAll = 0
-let countMonsterHour = 0
 class BattleActionStrategy {
   constructor() {
     this.enemy = new Enemy()
@@ -4803,33 +4981,28 @@ class BattleActionStrategy {
   }
 
   async execute() {
-    if (document.querySelector('#divFightCaptcha').style.display !== 'none') {
-      soundController.play('shine')
-      showNotification('Капча', `Обнаружена капча. Ручное управление.`)
-      return
-    }
-    const redMonster = !!document.querySelector(`#divFightH .trainerwild .wildinfo span`)?.classList.contains('rednumber') ?? false
+    if (this.isCaptcha()) return
 
-    if (settings.get('surrenderTrainer')) {
-      if (document.querySelector('#divFightH .pokemonBoxDummy')?.contains('trainer')) return new SurrenderAction().execute()
-    }
+    const wildIsRed = document.querySelector(`#divFightH .trainerwild .wildinfo span`)?.classList.contains('rednumber') ?? false
+
+    if (settings.get('surrenderTrainer') === true && document.querySelector('#divFightH .trainer')) return new SurrenderAction().execute()
 
     for (const [key, set] of Object.entries(allMonsters)) {
       let actualKey = key
 
       if (set.has(this.enemy.name)) {
-        if (settings.get('variableShine') === 'Ловить' && (await this.isShine()) && !redMonster) {
+        if (settings.get('variableShine') === 'Ловить' && (await this.isShine()) && !wildIsRed) {
           actualKey = 'Поймать'
         }
 
-        if ((await this.isShine()) && settings.get('variableShine') === 'Не использовать') {
+        if (settings.get('variableShine') === 'Не использовать' && (await this.isShine())) {
           soundController.play('shine')
           showNotification('Шайни', `Напал шайни ${this.enemy.name}`)
           return
         }
 
         if (key === 'Поймать') {
-          if (redMonster && !this.enemy.name === 'Яркокрыл') {
+          if (wildIsRed && !this.enemy.name === 'Яркокрыл') {
             actualKey = 'Частые'
           }
           if (settings.get('variableShine') === 'Убивать') {
@@ -4838,18 +5011,21 @@ class BattleActionStrategy {
         }
 
         const strategy = this.strategyMap[actualKey]
+
         if (strategy) {
           if (settings.get('monsterLimitEnable') === true && Number(settings.get('countMonsterLimit')) <= countMonsterAll) {
             soundController.play('shine')
             showNotification('Лимит', 'Достигнут лимит монстров')
-            return bot.stop()
+            bot.stop()
+            return
           }
+
           // Готовый дроп
-          if (settings.get('toxinEnabled') && this.enemy.name === 'Питонстр' && redMonster) {
+          if (settings.get('toxinEnabled') && this.enemy.name === 'Питонстр' && wildIsRed) {
             countMonsterAll++
             return new dropSpecialAction().toxin()
           }
-          if (settings.get('spikesEnabled') && this.enemy.name === 'Пикан' && redMonster) {
+          if (settings.get('spikesEnabled') && this.enemy.name === 'Пикан' && wildIsRed) {
             countMonsterAll++
             return new dropSpecialAction().spike()
           }
@@ -4871,45 +5047,46 @@ class BattleActionStrategy {
     showNotification('Редкий монстр', `Напал редкий монстр ${this.enemy.name}`)
     return
   }
-
   async surrender() {
     if (BattleState.isAggressiveLocation()) {
       soundController.play('shine')
       showNotification('Внимание', 'Агресивная локация')
       return
     }
-    new SurrenderAction().execute()
+    return new SurrenderAction().execute()
   }
-
   async capture() {
-    if (settings.get('weatherLimitEnable') === true) {
-      if (
-        settings
-          .get('variableWeather')
-          .split(',')
-          .some((w) => w.trim() === BattleState.getCurrentWeather()[1])
-      ) {
-        soundController.play('shine')
-        showNotification('Погода', 'Плохая погода, монстр не ловится.')
-        return new AttackAction().execute()
-      }
+    // нетрогать положение
+
+    if (this.isBadWeather()) {
+      soundController.play('shine')
+      showNotification('Погода', 'Плохая погода, монстр не ловится.')
+      return new AttackAction().execute()
     }
+
     if (this.enemy.name === 'Яркокрыл') {
       const arr = settings.get('captureYarkokryl')?.split(',')
 
       const target = document.querySelector('#divFightH .pokemonBoxFight .minicardContainer .image img').src.match(/\/(\d+)_(\d+)\.png$/)[2]
 
       if (!arr?.includes(target)) return new AttackAction().execute()
-      return new CaptureAction().execute(false, false, true)
+      return new CaptureAction().execute('30', false, true)
+    }
+    const result = await this.isShine()
+    if (result === 'super') {
+      return new CaptureAction().execute('18', true)
+    }
+    if (result === 'shine') {
+      return new CaptureAction().execute('13', true)
     }
 
-    const res = await this.isShine()
-    if (res === 'super') {
-      return new CaptureAction().execute(false, true)
+    let specialBall = null
+    if (settings.get('specialBalls')[this.enemy.name]) {
+      specialBall = settings.get('specialBalls')[this.enemy.name]
+
+      return new CaptureAction().execute(String(specialBall))
     }
-    if (res === 'shine') {
-      return new CaptureAction().execute(true, false)
-    }
+
     if (this.enemy.name === 'Семант') {
       const arr = settings.get('captureSemant')?.split(',')
       const obj = {
@@ -4952,20 +5129,14 @@ class BattleActionStrategy {
       const target = document.querySelector('#divFightH .pokemonBoxFight .minicardContainer .image img').src.match(/\/(\d+)_(\d+)\.png$/)[2]
       if (!find?.includes(target)) return new AttackAction().execute()
     }
+
     return new CaptureAction().execute()
   }
   levelUp() {
-    if (settings.get('weatherLimitEnable') === true) {
-      if (
-        settings
-          .get('variableWeather')
-          .split(',')
-          .some((w) => w.trim() === BattleState.getCurrentWeather()[1])
-      ) {
-        soundController.play('shine')
-        showNotification('Погода', 'Плохая погода, монстр не качается.')
-        return new AttackAction().execute()
-      }
+    if (this.isBadWeather()) {
+      soundController.play('shine')
+      showNotification('Погода', 'Плохая погода, монстр не качается.')
+      return new AttackAction().execute()
     }
 
     return new LevelUpAction().execute()
@@ -4979,10 +5150,8 @@ class BattleActionStrategy {
       .map((key) => objCombo[key])
       .filter((stage) => stage.stage !== 'Не использовать')
 
-    // Запускаем рекурсивную обработку
     return this.executeStageRecursive(stages)
   }
-
   async executeStageRecursive(stages, index = 0) {
     if (index >= stages.length) return true
 
@@ -4995,21 +5164,39 @@ class BattleActionStrategy {
       result = await new SwapAction().execute(swap)
     }
 
-    if (!result) {
-      console.log(`Этап ${index + 1} (${stage}) не выполнен — прерывание комбо`)
-      return false
-    }
+    // if (!result) {
+    //   console.log(`Этап ${index + 1} (${stage}) не выполнен — прерывание комбо`)
+    //   return false
+    // }
 
     // console.log(`Этап ${index + 1} (${stage}) выполнен`)
     return this.executeStageRecursive(stages, index + 1)
   }
 
+  //
   async isShine() {
     const selector = document.querySelector(`#divFightH .maincardContainer .name`)
 
     const result = selector.classList.contains('shine2') ? 'super' : selector?.classList.contains('shine1') ? 'shine' : false
 
     return result
+  }
+  isCaptcha() {
+    if (document.querySelector('#divFightCaptcha').style.display !== 'none') {
+      soundController.play('shine')
+      showNotification('Капча', `Обнаружена капча.`)
+      return true
+    }
+    return false
+  }
+  isBadWeather() {
+    return (
+      settings.get('weatherLimitEnable') === true &&
+      settings
+        .get('variableWeather')
+        .split(',')
+        .some((w) => w.trim() === BattleState.getCurrentWeather()[1])
+    )
   }
 }
 
