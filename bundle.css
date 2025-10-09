@@ -189,6 +189,18 @@
 
 .icons-check::before {
   content: "\f00c";
+}
+
+.icons-list-music::before {
+  content: "\f8c9";
+}
+
+.icons-newspaper::before {
+  content: "\f1ea";
+}
+
+.icons-paper-plane-top::before {
+  content: "\e20a";
 }:root {
   --spacing-s: 0.25rem;
   --spacing-md: 0.5rem;
@@ -375,6 +387,16 @@
   transition-timing-function: ease;
   z-index: 10;
 }
+.menu-container.no-backdrop {
+  position: absolute;
+  top: 50%;
+  left: auto;
+  inset-inline: auto 0;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
 .menu-container.open {
   opacity: 1;
 }
@@ -401,11 +423,22 @@
   transition-timing-function: ease;
 }
 .menu-container .menu .menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--color-text);
   font-size: 1rem;
   font-weight: bold;
-  text-align: center;
   padding: var(--spacing-md) var(--spacing-md) 0;
+}
+.menu-container .menu .menu-header .icons-xmark {
+  cursor: pointer;
+  margin-left: auto;
+  padding: var(--spacing-md);
+}
+.menu-container .menu .menu-header .icons-xmark:hover {
+  background-color: var(--color-hover);
+  border-radius: 50%;
 }
 .menu-container .menu .hr {
   margin: var(--spacing-s) 0;
@@ -707,90 +740,6 @@
   background-color: rgba(90, 90, 90, 0.6);
 }
 
-@media screen and (max-width: 920px) {
-  .table .table-content {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-  }
-  .mainMenu,
-  .dropMenu {
-    background-color: var(--color-background-menu);
-  }
-}
-@media screen and (max-width: 480px) {
-  .table .table-content {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .table-header {
-    flex-direction: column;
-  }
-}
-@media screen and (max-width: 768px) {
-  .btnToggle {
-    padding: 1rem;
-    margin-right: 1rem;
-    z-index: 1000;
-  }
-  .mainMenu {
-    font-family: "Roboto", sans-serif;
-    font-weight: 500;
-    position: absolute;
-    flex-direction: column;
-    inset-block: 8% auto;
-    inset-inline: auto 0;
-    color: var(--color-text);
-    background-color: var(--color-background-menu);
-    border-radius: var(--radius-md);
-    -webkit-backdrop-filter: blur(5px);
-            backdrop-filter: blur(5px);
-    transform-origin: right top;
-    transform: scale(0.85);
-    opacity: 0;
-    visibility: hidden;
-    transition-property: opacity, transform, visibility;
-    transition-duration: var(--transition-fast);
-    transition-timing-function: var(--cubic);
-    z-index: 1;
-  }
-  .mainMenu.open {
-    opacity: 1;
-    transform: scale(1);
-    visibility: visible;
-  }
-  .mainMenu .menuItem i {
-    margin-inline: var(--spacing-md);
-  }
-  .menuDrop {
-    position: absolute;
-    width: -moz-max-content;
-    width: max-content;
-    text-align: center;
-    border-radius: var(--radius-md);
-    padding: var(--spacing-s);
-    color: var(--color-text);
-    background: var(--color-background-menu);
-    -webkit-backdrop-filter: blur(5px);
-            backdrop-filter: blur(5px);
-    opacity: 0;
-    visibility: hidden;
-    transform-origin: right top;
-    inset-block: 100% auto;
-    inset-inline: auto 0;
-    margin-top: 10px;
-    transform: scale(0.85);
-    will-change: transform, opacity;
-    contain: layout paint;
-    transition-property: opacity, transform;
-    transition-duration: var(--transition-fast);
-    transition-timing-function: var(--cubic);
-  }
-  .menuDrop.open {
-    opacity: 1;
-    visibility: visible;
-    transform: scale(1);
-    pointer-events: auto;
-  }
-}
 .contanerHeal {
   position: absolute;
   top: 50%;
@@ -1085,4 +1034,115 @@
 }
 .capture-container .capture-item .capture-ball-container {
   cursor: pointer;
+}
+
+@media screen and (max-width: 920px) {
+  .menu-container.no-backdrop {
+    left: 50%;
+  }
+  .table .table-content {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+  }
+  .mainMenu,
+  .dropMenu {
+    background-color: var(--color-background-menu);
+  }
+}
+@media screen and (max-width: 480px) {
+  .table .table-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .table-header {
+    flex-direction: column;
+  }
+}
+@media screen and (max-width: 768px) {
+  .btnToggle {
+    padding: 1rem;
+    margin-right: 1rem;
+    z-index: 1000;
+  }
+  .mainMenu {
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    position: absolute;
+    flex-direction: column;
+    inset-block: 8% auto;
+    inset-inline: auto 0;
+    color: var(--color-text);
+    background-color: var(--color-background-menu);
+    border-radius: var(--radius-md);
+    -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+    transform-origin: right top;
+    transform: scale(0.85);
+    opacity: 0;
+    visibility: hidden;
+    transition-property: opacity, transform, visibility;
+    transition-duration: var(--transition-fast);
+    transition-timing-function: var(--cubic);
+    z-index: 1;
+  }
+  .mainMenu.open {
+    opacity: 1;
+    transform: scale(1);
+    visibility: visible;
+  }
+  .mainMenu .menuItem i {
+    margin-inline: var(--spacing-md);
+  }
+  .menuDrop {
+    position: absolute;
+    width: -moz-max-content;
+    width: max-content;
+    text-align: center;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-s);
+    color: var(--color-text);
+    background: var(--color-background-menu);
+    -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+    opacity: 0;
+    visibility: hidden;
+    transform-origin: right top;
+    inset-block: 100% auto;
+    inset-inline: auto 0;
+    margin-top: 10px;
+    transform: scale(0.85);
+    will-change: transform, opacity;
+    contain: layout paint;
+    transition-property: opacity, transform;
+    transition-duration: var(--transition-fast);
+    transition-timing-function: var(--cubic);
+  }
+  .menuDrop.open {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+}
+.news-bot-container {
+  border: 1px solid var(--color-separator);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-table);
+  max-height: 300px;
+  padding: var(--spacing-s);
+}
+.news-bot-container .news-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0 var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-separator);
+}
+.news-bot-container .news-item .news-text {
+  line-height: 1rem;
+}
+.news-bot-container .news-item:last-child {
+  border-bottom: none;
 }
