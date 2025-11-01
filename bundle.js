@@ -208,12 +208,7 @@ async function btnWild(isActive) {
   if (!isActive && !btn.classList.contains('pressed')) return
 
   function waitForClassChange(observer, target) {
-    return observer.observe(
-      'classChange',
-      target,
-      { attributes: true, attributeFilter: ['class'] },
-      (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'class'
-    )
+    return observer.observe('classChange', target, { attributes: true, attributeFilter: ['class'] }, (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'class')
   }
 }
 
@@ -270,18 +265,18 @@ function waitForXHR(url, timeout = 10000) {
 
 // const rect = element.getBoundingClientRect()
 // console.log('в игре', rect)
-// cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js > bundle.js
+// cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js ivent.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "Добавлено:</b> раздел звуков для уведомлений и раздел обновлений. <br>Небольшие визуальные улучшения.<br>Исправлены некоторые проблемы."
+// git commit -m "Звук откат shine"
 // git push origin main
 
-// git tag -d vv2.9
-// git push origin :refs/tags/v2.9
+// git tag -d v3.0
+// git push origin :refs/tags/v3.0
 
-// git tag v2.9
-// git push origin v2.9
+// git tag v3.0
+// git push origin v3.0
 
 // npm run build -- --publish always
 class TimePicker {
@@ -1665,6 +1660,10 @@ const DEFAULT_VALUES = {
     five: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
     six: { stage: 'Не использовать', swap: '', attack: '0', countAttack: '1' },
   },
+
+  //
+  halloweenIvent: false,
+  halloweenSellIvent: false,
 }
 
 class SettingsManager {
@@ -1887,7 +1886,6 @@ class Button {
 class CheckBox extends Button {
   constructor(options) {
     super(options)
-
     this.label = document.createElement('label')
     this.label.classList.add('toggle')
 
@@ -3393,6 +3391,11 @@ const menuOther = new Menu({
       onClick: () => menuAutoStop.open(),
     },
     {
+      icon: 'fa-light icons-events-all',
+      text: 'Ивенты',
+      onClick: () => menuEvents.open(),
+    },
+    {
       icon: 'fa-light icons-newspaper',
       text: 'Обновления',
       onClick: () => menuNews.open(),
@@ -3635,6 +3638,45 @@ const menuHeal = new Menu({
     },
   ],
 })
+
+const menuEvents = new Menu({
+  title: 'Ивенты',
+  items: [{ text: 'Хэллоуин', icon: 'fa-light icons-pumpkin', onClick: () => halloween.open() }],
+})
+
+const halloween = new Menu({
+  title: 'Хэллоуин',
+  text: 'Наглецам сдаётся',
+  items: [
+    {
+      type: 'checkbox',
+      text: 'Дроп конфет',
+      disable: true,
+      storage: 'halloweenIvent',
+      onChange: () => {
+        if (settings.get('halloweenIvent') === true) {
+          iventHalloween.candy()
+        } else {
+          iventHalloween.stop(true)
+        }
+      },
+    },
+    {
+      type: 'checkbox',
+      text: 'Наглецы',
+      storage: 'halloweenSellIvent',
+      disable: true,
+      onChange: () => {
+        if (settings.get('halloweenSellIvent') === true) {
+          iventHalloween.insolent()
+        } else {
+          iventHalloween.stop(false)
+        }
+      },
+    },
+  ],
+})
+
 const menuNews = new Menu({
   title: 'Обновления',
   items: [
@@ -3644,6 +3686,10 @@ const menuNews = new Menu({
         {
           date: '02.10.2025',
           text: '<b>Добавлено:</b> раздел звуков для уведомлений и раздел обновлений. <br>Небольшие визуальные улучшения.<br>Исправлены некоторые проблемы.',
+        },
+        {
+          date: '01.11.2025',
+          text: '<b>Добавлено:</b> Раздел с ивентами.',
         },
       ],
     },
@@ -3964,10 +4010,7 @@ class HealAction {
     panel.querySelector('.tabContent.tournaments .btnTelep').click() // телепорт
 
     const btnTeleport = document.querySelector('.divContext .divElements .divElement')
-    if (
-      !btnTeleport ||
-      (!btnTeleport.textContent.trim().includes('Арена Лиги Чемпионов') && !btnTeleport.textContent.trim().includes('Возврат на локацию'))
-    ) {
+    if (!btnTeleport || (!btnTeleport.textContent.trim().includes('Арена Лиги Чемпионов') && !btnTeleport.textContent.trim().includes('Возврат на локацию'))) {
       return false
     }
 
@@ -3979,22 +4022,12 @@ class HealAction {
 
   async openMenuDiary() {
     const container = document.querySelector('.divDockPanels .divDockPanelsContent')
-    await this.observer.observe(
-      'openDiary',
-      container,
-      { childList: true, subtree: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    await this.observer.observe('openDiary', container, { childList: true, subtree: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
   }
 
   //
   async moveTo(url) {
-    const movePromise = this.observer.observe(
-      'move',
-      this.target,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    const movePromise = this.observer.observe('move', this.target, { childList: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
 
     const responsePromise = waitForXHR(url)
 
@@ -4011,22 +4044,12 @@ class HealAction {
   async isHeal() {
     const container = document.querySelector('.divContext .divElements')
 
-    return this.observer.observe(
-      'isHeal',
-      container,
-      { attributeFilter: ['style'], attributes: true },
-      (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'style' && mutation.target.style.display !== 'none'
-    )
+    return this.observer.observe('isHeal', container, { attributeFilter: ['style'], attributes: true }, (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'style' && mutation.target.style.display !== 'none')
   }
   async healing() {
     const container = document.querySelector('#divAlerten')
 
-    return this.observer.observe(
-      'healing',
-      container,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    return this.observer.observe('healing', container, { childList: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
   }
   //
   async transferMonster() {
@@ -4509,23 +4532,13 @@ class BattleObserver {
   waitForBattleUpdate() {
     const battleContainer = document.querySelector('#divFightI')
 
-    return this.observe(
-      'battleUpdate',
-      battleContainer,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    return this.observe('battleUpdate', battleContainer, { childList: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
   }
 
   waitForMonsterChange() {
     const movesContainer = document.querySelector('#divFightI .moves')
 
-    return this.observe(
-      'monsterChange',
-      movesContainer,
-      { attributes: true, attributeFilter: ['class'] },
-      (mutation) => mutation.type === 'attributes'
-    )
+    return this.observe('monsterChange', movesContainer, { attributes: true, attributeFilter: ['class'] }, (mutation) => mutation.type === 'attributes')
   }
 
   async waitForBattleOrMonsterChange() {
@@ -4533,21 +4546,11 @@ class BattleObserver {
   }
   async openMenuElements() {
     const conateiner = document.querySelector('.divContext .divElements')
-    return this.observe(
-      'menuOpen',
-      conateiner,
-      { childList: true, subtree: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    return this.observe('menuOpen', conateiner, { childList: true, subtree: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
   }
   async waitMenuTeam() {
     const menuTeam = document.querySelector('.divDockPanels .panel.panelpokes .divPokeTeam')
-    return this.observe(
-      'waitTeam',
-      menuTeam,
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    return this.observe('waitTeam', menuTeam, { childList: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
   }
 }
 
@@ -4623,7 +4626,7 @@ class AttackAction {
     while (BattleState.isBattleActive() && this.attempts <= this.maxAttempts) {
       await GameUtils.delayAttack()
 
-      if (this.player.hp <= +settings.get('criticalHP')) {
+      if (this.player.hp <= +settings.get('criticalHP') || this.player.isPlayer) {
         BattleState.handleCriticalSituation()
         return false
       }
@@ -4685,7 +4688,7 @@ class LevelUpAction {
   }
   async execute() {
     while (BattleState.isBattleActive() && this.attempts < this.maxAttempts) {
-      if (this.player.hp <= +settings.get('criticalHP')) return BattleState.handleCriticalSituation()
+      if (this.player.hp <= +settings.get('criticalHP') || this.player.isPlayer) return BattleState.handleCriticalSituation()
       if (+this.enemy.lvl >= +settings.get('maxHighLvl', 101)) return BattleState.handleCriticalSituation(false) // не хилить
 
       const result = this.manager.findAttack(settings.get('attackUp'))
@@ -4713,8 +4716,7 @@ class LevelUpAction {
 
         const currentMonster = await this.currentMonster()
 
-        if ((BattleState.isBattleActive() && currentMonster === +settings.get('monsterUp').replace(/[^\d]/g, '')) || this.player.isPlayer)
-          return BattleState.handleCriticalSituation()
+        if ((BattleState.isBattleActive() && currentMonster === +settings.get('monsterUp').replace(/[^\d]/g, '')) || this.player.isPlayer) return BattleState.handleCriticalSituation()
 
         this.attempts++
       } else {
@@ -4849,12 +4851,7 @@ class SwapAction {
   }
 
   async waitSwitche() {
-    const movePromise = this.observer.observe(
-      'switche',
-      document.querySelector('#divFightI'),
-      { childList: true },
-      (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0
-    )
+    const movePromise = this.observer.observe('switche', document.querySelector('#divFightI'), { childList: true }, (mutation) => mutation.type === 'childList' && mutation.addedNodes.length > 0)
 
     const responsePromise = waitForXHR('/do/fight/switche')
 
@@ -4954,7 +4951,7 @@ class CaptureAction {
     //
     while (true) {
       if (await this.setTaunt()) return true
-      if (this.player.hp <= +settings.get('criticalHP')) return false
+      if (this.player.hp <= +settings.get('criticalHP') || this.player.isPlayer) return false
 
       const result = this.manager.findAttack(settings.get('attackWeather'))
       this.weatherAttack = result.attack
@@ -4978,7 +4975,7 @@ class CaptureAction {
   async attackStage() {
     while (true) {
       if (await this.setTaunt()) return true
-      if (this.player.hp <= +settings.get('criticalHP')) return false
+      if (this.player.hp <= +settings.get('criticalHP') || this.player.isPlayer) return false
       if (this.enemy.hp <= this.criticalHPEnemy) return true
 
       const result = this.manager.findAttack(settings.get('attackCapture'))
@@ -5005,7 +5002,7 @@ class CaptureAction {
     while (true) {
       if (await this.setTaunt()) return true
 
-      if (this.player.hp <= +settings.get('criticalHP')) return false
+      if (this.player.hp <= +settings.get('criticalHP') || this.player.isPlayer) return false
 
       const result = this.manager.findAttack(settings.get('attackStatus'))
       this.statusAttack = result.attack
@@ -5093,10 +5090,7 @@ class CaptureAction {
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
     for (const el of monsters) {
-      if (
-        el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-        settings.get('monsterCapture').replace(/[^\d]/g, '')
-      ) {
+      if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('monsterCapture').replace(/[^\d]/g, '')) {
         const btnSet = el.querySelector('.maincardContainer .title .button.justicon')
         if (!btnSet) {
           const hp = GameUtils.parsePercentage(el.querySelector('.progressbar.barHP div'))
@@ -5152,10 +5146,7 @@ class CaptureAction {
   async searchAbility() {
     const btnOpen = await openTeam()
 
-    const ability = document
-      .querySelector('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard:last-of-type .maincardContainer .info .divAbility')
-      .textContent.trim()
-      .toLowerCase()
+    const ability = document.querySelector('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard:last-of-type .maincardContainer .info .divAbility').textContent.trim().toLowerCase()
 
     if (
       settings
@@ -5370,9 +5361,7 @@ class BattleActionStrategy {
   }
   async combo(objCombo) {
     // Преобразуем объект в массив стадий и убираем "Не использовать"
-    const stages = ['oneStage', 'twoStage', 'threeStage', 'fourStage']
-      .map((key) => objCombo[key])
-      .filter((stage) => stage.stage !== 'Не использовать')
+    const stages = ['oneStage', 'twoStage', 'threeStage', 'fourStage'].map((key) => objCombo[key]).filter((stage) => stage.stage !== 'Не использовать')
 
     return this.executeStageRecursive(stages)
   }
@@ -5521,10 +5510,7 @@ class dropSpecialAction {
       monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
       for (const el of monsters) {
-        if (
-          el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-          settings.get('twoMonsterToxin').replace(/[^\d]/g, '')
-        ) {
+        if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('twoMonsterToxin').replace(/[^\d]/g, '')) {
           const btnSet = el.querySelector('.maincardContainer .title .button.justicon')
           if (!btnSet) {
             await new SurrenderAction().execute()
@@ -5547,10 +5533,7 @@ class dropSpecialAction {
 
       monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
       for (const el of monsters) {
-        if (
-          el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-          settings.get('threeMonsterToxin').replace(/[^\d]/g, '')
-        ) {
+        if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('threeMonsterToxin').replace(/[^\d]/g, '')) {
           const btnSet = el.querySelector('.maincardContainer .title .button.justicon')
           if (!btnSet) {
             await new SurrenderAction().execute()
@@ -5605,10 +5588,7 @@ class dropSpecialAction {
       monsters = document.querySelectorAll('.divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
 
       for (const el of monsters) {
-        if (
-          el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-          settings.get('twoMonsterSpike').replace(/[^\d]/g, '')
-        ) {
+        if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('twoMonsterSpike').replace(/[^\d]/g, '')) {
           const elementHP = el.querySelector('.minicardContainer .progressbar.barHP div')
           this.twoMonster = GameUtils.parsePercentage(elementHP)
 
@@ -5636,10 +5616,7 @@ class dropSpecialAction {
 
       monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
       for (const el of monsters) {
-        if (
-          el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-          settings.get('threeMonsterSpike').replace(/[^\d]/g, '')
-        ) {
+        if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('threeMonsterSpike').replace(/[^\d]/g, '')) {
           const elementHP = el.querySelector('.minicardContainer .progressbar.barHP div')
           this.threeMonster = GameUtils.parsePercentage(elementHP)
 
@@ -5671,10 +5648,7 @@ class dropSpecialAction {
 
     const monsters = document.querySelectorAll(' .divDockPanels .panel.panelpokes .divPokeTeam .pokemonBoxCard')
     for (const el of monsters) {
-      if (
-        el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') ===
-        settings.get('firstMonsterSpike').replace(/[^\d]/g, '')
-      ) {
+      if (el.querySelector('.maincardContainer .toolbar .id').textContent.trim().replace(/[^\d]/g, '') === settings.get('firstMonsterSpike').replace(/[^\d]/g, '')) {
         const btnSet = el.querySelector('.maincardContainer .title .button.justicon')
         const response = waitForXHR('/do/fight/switche')
         btnSet?.click()
@@ -6284,3 +6258,86 @@ class AutoReklama {
 }
 
 const autoAd = new AutoReklama()
+class Ivent {
+  constructor() {
+    this.observer = new BattleObserver()
+    this.obsCandy = null
+    this.obsInsolent = null
+    this.isActiveCandy = false
+    this.isActiveInsolent = false
+  }
+
+  async candy() {
+    if (this.isActiveCandy) return
+
+    this.isActiveCandy = true
+    this.obsCandy = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'childList' && m.addedNodes.length > 0) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1 && node.classList.contains('divHalloweenCandy')) {
+              this.clickCandy(node)
+            }
+          }
+        }
+      }
+    })
+
+    this.obsCandy.observe(document.body, {
+      childList: true,
+      subtree: false,
+    })
+  }
+  async clickCandy(el) {
+    const isVisual = () => Boolean(document.querySelector('.divHalloweenCandy'))
+
+    while (true) {
+      const wait = this.waitClicker(el)
+      el.click()
+      await wait
+
+      await GameUtils.delay(180, 360)
+      if (!isVisual()) return
+    }
+  }
+
+  async waitClicker(el) {
+    return this.observer.observe('styleChange', el, { attributes: true, attributeFilter: ['style'] }, (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'style')
+  }
+  ///
+  async insolent() {
+    if (this.isActiveInsolent) return
+    this.isActiveInsolent = true
+    this.obsInsolent = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'childList' && m.addedNodes.length > 0) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1 && node.classList.contains('divHalloweenTrick')) {
+              for (const el of node.querySelectorAll('.button.gray.withtext')) if (el.textContent.trim() === 'Отдать 1.666 кр. и уйти.') el.click()
+            }
+          }
+        }
+      }
+    })
+
+    this.obsInsolent.observe(document.body, {
+      childList: true,
+      subtree: false,
+    })
+  }
+  stop(isCandy = false) {
+    if (isCandy) {
+      this.observer.disconnect('styleChange')
+      this.obsCandy.disconnect()
+      this.obsCandy = null
+      this.isActiveCandy = false
+
+      return
+    }
+
+    this.obsInsolent?.disconnect()
+    this.obsInsolent = null
+    this.isActiveInsolent = false
+  }
+}
+const iventHalloween = new Ivent()

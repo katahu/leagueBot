@@ -201,6 +201,14 @@
 
 .icons-paper-plane-top::before {
   content: "\e20a";
+}
+
+.icons-pumpkin::before {
+  content: "\f707";
+}
+
+.icons-events-all::before {
+  content: "\f073";
 }:root {
   --spacing-s: 0.25rem;
   --spacing-md: 0.5rem;

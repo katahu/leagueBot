@@ -1,19 +1,7 @@
 // ============================================================================
 // 📦 Импорты
 // ============================================================================
-const {
-  app,
-  BrowserWindow,
-  BrowserView,
-  ipcMain,
-  globalShortcut,
-  protocol,
-  shell,
-  powerSaveBlocker,
-  dialog,
-  Tray,
-  Menu,
-} = require('electron')
+const { app, BrowserWindow, BrowserView, ipcMain, globalShortcut, protocol, shell, powerSaveBlocker, dialog, Tray, Menu } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs = require('fs')
@@ -82,7 +70,7 @@ function createGameView() {
   resizeGameView()
 
   gameView.webContents.loadURL('https://game.league17.ru/')
-  // gameView.webContents.openDevTools({ mode: "detach" })
+  // gameView.webContents.openDevTools({ mode: 'detach' })
 
   // Безопасная навигация
   gameView.webContents.setWindowOpenHandler(({ url }) => {
