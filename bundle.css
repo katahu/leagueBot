@@ -397,13 +397,16 @@
 }
 .menu-container.no-backdrop {
   position: absolute;
-  top: 50%;
-  left: auto;
-  inset-inline: auto 0;
+  display: block;
+  align-items: normal;
   width: auto;
   height: auto;
-  transform: translate(-50%, -50%);
   opacity: 0;
+}
+.menu-container.no-backdrop .header-title {
+  margin-right: 1.5rem;
+  width: 100%;
+  text-align: center;
 }
 .menu-container.open {
   opacity: 1;
@@ -750,9 +753,6 @@
 
 .contanerHeal {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   opacity: 0;
   transition-property: opacity;
   transition-duration: var(--transition-fast);
@@ -798,7 +798,8 @@
   padding: var(--spacing-md) var(--spacing-md) 0;
 }
 .contanerHeal .menu .menu-header .header-title {
-  margin-left: 0.3rem;
+  width: 100%;
+  margin-left: 2.5rem;
 }
 .contanerHeal .menu .menu-header .icons-xmark {
   cursor: pointer;
@@ -1045,9 +1046,6 @@
 }
 
 @media screen and (max-width: 920px) {
-  .menu-container.no-backdrop {
-    left: 50%;
-  }
   .table .table-content {
     grid-template-columns: repeat(3, 1fr);
     gap: 25px;

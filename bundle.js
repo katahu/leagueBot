@@ -1,8 +1,4 @@
-const arrTarget = [
-  'Вы уверены, что хотите сдаться?',
-  'Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?',
-  'Вы хотите вернуться на локацию, из которой вы переместились на арену?',
-]
+const arrTarget = ['Вы уверены, что хотите сдаться?', 'Вы будете перенесены на локацию - Арена Лиги Чемпионов, стоимость: 500 кр. Продолжить?', 'Вы хотите вернуться на локацию, из которой вы переместились на арену?']
 
 ;(function () {
   window.__originalConfirm = window.confirm
@@ -263,20 +259,18 @@ function waitForXHR(url, timeout = 10000) {
   })
 }
 
-// const rect = element.getBoundingClientRect()
-// console.log('в игре', rect)
-// cat inject.js utils.js timer.js config.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js ivent.js > bundle.js
+// cat inject.js utils.js timer.js config.js draggble.js render.js config-ui.js themeController.js heal.js useItem.js dropController.js dev.js antibot.js routerHeal.js autoAd.js ivent.js > bundle.js
 // cat ./css/fonts.css ./css/style.css > bundle.css
 
 // git add .
-// git commit -m "Звук откат shine"
+// git commit -m "Ивенты fix"
 // git push origin main
 
-// git tag -d v3.0
-// git push origin :refs/tags/v3.0
+// git tag -d v3.2
+// git push origin :refs/tags/v3.2
 
-// git tag v3.0
-// git push origin v3.0
+// git tag v3.2
+// git push origin v3.2
 
 // npm run build -- --publish always
 class TimePicker {
@@ -343,11 +337,14 @@ class TimePicker {
   }
 
   handleLoop(wheel, itemCount) {
-    const maxScroll = this.ITEM_HEIGHT * itemCount * (this.LOOP_COUNT - 1)
-    if (wheel.scrollTop <= this.ITEM_HEIGHT) {
-      wheel.scrollTop += itemCount * this.ITEM_HEIGHT
-    } else if (wheel.scrollTop >= maxScroll - this.ITEM_HEIGHT) {
-      wheel.scrollTop -= itemCount * this.ITEM_HEIGHT
+    const totalHeight = this.ITEM_HEIGHT * itemCount * this.LOOP_COUNT
+    const singleLoopHeight = this.ITEM_HEIGHT * itemCount
+    const buffer = this.ITEM_HEIGHT / 2
+
+    if (wheel.scrollTop < buffer) {
+      wheel.scrollTop += singleLoopHeight
+    } else if (wheel.scrollTop > totalHeight - singleLoopHeight - buffer) {
+      wheel.scrollTop -= singleLoopHeight
     }
   }
 
@@ -1849,6 +1846,175 @@ window.addEventListener('message', (event) => {
     currentLocation = String(event.data.object.loc.id)
   }
 })
+class Draggle {
+  constructor() {
+    this.offsetX = 0
+    this.offsetY = 0
+    this.startLeft = 0
+    this.startTop = 0
+    this.dragging = false
+    this.parentBounds = null
+    this.animationFrame = null
+    this.lastX = 0
+    this.lastY = 0
+  }
+
+  // Получение координат с поддержкой touch и pointer событий
+  getEventCoords(e) {
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      }
+    }
+    return {
+      x: e.clientX,
+      y: e.clientY,
+    }
+  }
+
+  centerInParent(target) {
+    const oldTransform = target.style.transform
+    target.style.transform = 'none'
+
+    requestAnimationFrame(() => {
+      const parent = target.offsetParent || document.body
+      const parentRect = parent.getBoundingClientRect()
+      const targetRect = target.getBoundingClientRect()
+
+      const left = (parentRect.width - targetRect.width) / 2
+      const top = (parentRect.height - targetRect.height) / 2
+
+      target.style.left = `${left}px`
+      target.style.top = `${top}px`
+
+      target.style.transform = oldTransform
+    })
+  }
+
+  on(options) {
+    const { target, handle, isLimit } = options
+
+    target.style.position = 'absolute'
+    handle.style.cursor = 'move'
+
+    // Отключаем нативное поведение на тачскрине
+    handle.style.touchAction = 'none'
+    handle.style.userSelect = 'none'
+    handle.style.webkitUserSelect = 'none'
+
+    // Автоцентрирование
+    this.centerInParent(target)
+
+    const parent = target.offsetParent || document.body
+
+    const onStart = (e) => {
+      // Предотвращаем дефолтное поведение только для touch
+      if (e.type === 'touchstart') {
+        e.preventDefault()
+      }
+      e.stopPropagation()
+
+      this.dragging = true
+
+      const coords = this.getEventCoords(e)
+
+      this.startLeft = target.offsetLeft
+      this.startTop = target.offsetTop
+      this.offsetX = coords.x - this.startLeft
+      this.offsetY = coords.y - this.startTop
+
+      if (isLimit) {
+        this.parentBounds = {
+          width: parent.clientWidth,
+          height: parent.clientHeight,
+        }
+      }
+
+      target.style.willChange = 'transform'
+
+      // Добавляем слушатели для обоих типов событий
+      document.addEventListener('touchmove', onMove, { passive: false })
+      document.addEventListener('pointermove', onMove)
+      document.addEventListener('touchend', onEnd)
+      document.addEventListener('pointerup', onEnd)
+    }
+
+    const onMove = (e) => {
+      if (!this.dragging) return
+
+      // Предотвращаем скролл на мобильных
+      if (e.type === 'touchmove') {
+        e.preventDefault()
+      }
+
+      const coords = this.getEventCoords(e)
+      this.lastX = coords.x
+      this.lastY = coords.y
+
+      if (this.animationFrame === null) {
+        this.animationFrame = requestAnimationFrame(() => {
+          let deltaX = this.lastX - this.offsetX - this.startLeft
+          let deltaY = this.lastY - this.offsetY - this.startTop
+
+          if (isLimit && this.parentBounds) {
+            const maxX = this.parentBounds.width - target.offsetWidth
+            const maxY = this.parentBounds.height - target.offsetHeight
+
+            let newLeft = this.startLeft + deltaX
+            let newTop = this.startTop + deltaY
+
+            if (newLeft < 0) deltaX -= newLeft
+            if (newTop < 0) deltaY -= newTop
+            if (newLeft > maxX) deltaX -= newLeft - maxX
+            if (newTop > maxY) deltaY -= newTop - maxY
+          }
+
+          target.style.transform = `translate(${deltaX}px, ${deltaY}px)`
+          this.animationFrame = null
+        })
+      }
+    }
+
+    const onEnd = () => {
+      if (!this.dragging) return
+
+      this.dragging = false
+
+      const style = target.style.transform
+      const match = style.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+      let deltaX = 0
+      let deltaY = 0
+
+      if (match) {
+        deltaX = parseFloat(match[1])
+        deltaY = parseFloat(match[2])
+      }
+
+      target.style.left = `${this.startLeft + deltaX}px`
+      target.style.top = `${this.startTop + deltaY}px`
+      target.style.transform = ''
+      target.style.willChange = ''
+
+      this.parentBounds = null
+
+      if (this.animationFrame !== null) {
+        cancelAnimationFrame(this.animationFrame)
+        this.animationFrame = null
+      }
+
+      // Удаляем все слушатели
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('touchend', onEnd)
+      document.removeEventListener('pointerup', onEnd)
+    }
+
+    // Добавляем слушатели для обоих типов событий
+    handle.addEventListener('touchstart', onStart, { passive: false })
+    handle.addEventListener('pointerdown', onStart)
+  }
+}
 class Button {
   constructor(options) {
     if (Array.isArray(options)) {
@@ -2047,113 +2213,6 @@ class Radio {
   }
 }
 
-// class Menu {
-//   constructor(options) {
-//     this.options = options
-
-//     this.el = document.createElement('div')
-//     this.el.classList.add('menu-container')
-
-//     this.backdrop = document.createElement('div')
-//     this.backdrop.classList.add('backdrop')
-
-//     this.menu = document.createElement('div')
-//     this.menu.classList.add('menu')
-
-//     this.menuHeader = document.createElement('div')
-//     this.menuHeader.classList.add('menu-header')
-
-//     this.menuTitle = document.createElement('span')
-//     this.menuTitle.classList.add('menu-title')
-//     this.menuTitle.textContent = options.title
-
-//     this.separator = document.createElement('div')
-//     this.separator.classList.add('hr')
-//     this.menu.append(this.menuHeader, this.separator)
-
-//     if (options.text) {
-//       this.text = document.createElement('span')
-//       this.text.classList.add('menu-text')
-//       const formattedText = options.text.replace(/\n/g, '<br>')
-//       this.text.innerHTML = formattedText
-//       this.menu.append(this.text)
-//     }
-
-//     this.content = document.createElement('div')
-//     this.content.classList.add('menu-content', 'custom-scroll')
-
-//     this.createItems(options.items)
-//     this.backdrop.addEventListener('click', () => {
-//       this.close()
-//     })
-//     this.modalRef = {
-//       close: () => this.close(),
-//     }
-//     ///
-
-//     this.menuHeader.append(this.menuTitle)
-//     this.menu.append(this.content)
-//     this.el.append(this.backdrop, this.menu)
-//   }
-
-//   createItems(items) {
-//     items.forEach((item) => {
-//       switch (item.type) {
-//         case 'checkbox':
-//           this.content.append(new CheckBox(item).el)
-//           break
-//         case 'input':
-//           this.content.append(new Input(item).el)
-//           break
-//         case 'radio':
-//           this.content.append(new Radio(item).groupRadio)
-//           break
-//         case 'viewHeal':
-//           this.content.append(new RouterViewHeal().container)
-//           break
-//         case 'timer':
-//           this.content.append(new TimePicker().container)
-//           break
-//         case 'ballSpecial':
-//           this.content.append(new BallSpecial().el)
-//           break
-//         case 'NewsBot':
-//           this.content.append(new NewsBot(item).el)
-//           break
-//         default:
-//           this.content.append(new Button(item).el)
-//           break
-//       }
-//     })
-//   }
-//   open() {
-//     document.body.appendChild(this.el)
-//     this.el.classList.remove('close')
-
-//     modalManager.register(this.modalRef)
-
-//     requestAnimationFrame(() => {
-//       this.el.classList.add('open')
-//     })
-//   }
-
-//   close() {
-//     this.el.classList.remove('open')
-//     modalManager.unregister(this.modalRef)
-
-//     requestAnimationFrame(() => {
-//       this.el.classList.add('close')
-//       setTimeout(() => {
-//         this.el.remove()
-//         this.el.classList.remove('close')
-//       }, 200)
-//     })
-//   }
-//   update() {
-//     this.content.innerHTML = ''
-//     this.createItems(this.options.items)
-//   }
-// }
 class Menu {
   constructor(options) {
     this.options = options
@@ -2179,9 +2238,6 @@ class Menu {
     this.menuTitle = document.createElement('span')
     this.menuTitle.classList.add('header-title')
 
-    if (options.noBackdrop) {
-      this.menuTitle.style.marginLeft = '0.3rem'
-    }
     this.menuTitle.textContent = options.title
 
     if (options.noBackdrop) {
@@ -2217,7 +2273,9 @@ class Menu {
         close: () => this.close(),
       }
     }
-
+    if (options.noBackdrop) {
+      new Draggle().on({ target: this.el, handle: this.menuTitle, isLimit: true })
+    }
     ///
 
     this.menuHeader.append(this.menuTitle, this.xMark ? this.xMark : '')
@@ -2863,12 +2921,75 @@ const menuFight = new Menu({
     {
       icon: 'fa-light icons-toxin',
       text: 'Дроп яда Питонстра',
-      onClick: () => menuToxin.open(),
+      onClick: () => {
+        const menuToxin = new Menu({
+          title: 'Дроп яда Питонстра',
+          text: 'Стартовый монстр должен быть с Семенами-пиявками.\n Второй и третий монстр будут меняться между собой.\n Рекомендуется использовать второго с Хабубом, третьего летающего монстра.',
+          noBackdrop: true,
+          items: [
+            {
+              type: 'input',
+              text: 'Второй монстр:',
+              placeholder: 'id монстра',
+              storage: 'twoMonsterToxin',
+              width: '95px',
+            },
+            {
+              type: 'input',
+              text: 'Третий монстр:',
+              placeholder: 'id монстра',
+              storage: 'threeMonsterToxin',
+              width: '95px',
+            },
+            {
+              type: 'checkbox',
+              text: 'Включить дроп яда',
+              storage: 'toxinEnabled',
+            },
+          ],
+        })
+        menuToxin.open()
+      },
     },
     {
       icon: 'fa-light icons-spike',
       text: 'Дроп колючек Пикан',
-      onClick: () => menuSpike.open(),
+      onClick: () => {
+        const menuSpike = new Menu({
+          title: 'Дроп колючек Пикан',
+          text: 'Первый монстр должен быть с Отравлением, он может быть не стартовый!\n Второй и третий монстр будут меняться между собой.',
+          noBackdrop: true,
+          items: [
+            {
+              type: 'input',
+              text: 'Первый монстр:',
+              placeholder: 'Пусто - текущим',
+              storage: 'firstMonsterSpike',
+              width: '110px',
+            },
+            {
+              type: 'input',
+              text: 'Второй монстр:',
+              placeholder: 'id монстра',
+              storage: 'twoMonsterSpike',
+              width: '95px',
+            },
+            {
+              type: 'input',
+              text: 'Третий монстр:',
+              placeholder: 'id монстра',
+              storage: 'threeMonsterSpike',
+              width: '95px',
+            },
+            {
+              type: 'checkbox',
+              text: 'Включить дроп колючек',
+              storage: 'spikesEnabled',
+            },
+          ],
+        })
+        menuSpike.open()
+      },
     },
   ],
 })
@@ -3009,39 +3130,7 @@ const menuToxin = new Menu({
     },
   ],
 })
-const menuSpike = new Menu({
-  title: 'Дроп колючек Пикан',
-  text: 'Первый монстр должен быть с Отравлением, он может быть не стартовый!\n Второй и третий монстр будут меняться между собой.',
-  noBackdrop: true,
-  items: [
-    {
-      type: 'input',
-      text: 'Первый монстр:',
-      placeholder: 'Пусто - текущим',
-      storage: 'firstMonsterSpike',
-      width: '110px',
-    },
-    {
-      type: 'input',
-      text: 'Второй монстр:',
-      placeholder: 'id монстра',
-      storage: 'twoMonsterSpike',
-      width: '95px',
-    },
-    {
-      type: 'input',
-      text: 'Третий монстр:',
-      placeholder: 'id монстра',
-      storage: 'threeMonsterSpike',
-      width: '95px',
-    },
-    {
-      type: 'checkbox',
-      text: 'Включить дроп колючек',
-      storage: 'spikesEnabled',
-    },
-  ],
-})
+
 //
 const menuMonster = new Menu({
   title: 'Монстры',
@@ -3690,6 +3779,10 @@ const menuNews = new Menu({
         {
           date: '01.11.2025',
           text: '<b>Добавлено:</b> Раздел с ивентами.',
+        },
+        {
+          date: '16.11.2025',
+          text: 'Исправлена проблема с ловлей Сенсов, некоторые меню стали перетаскиваемыми.',
         },
       ],
     },
@@ -5043,7 +5136,7 @@ class CaptureAction {
   }
   //
   async setTaunt(force = false) {
-    if (!['Эни', 'Сенс'].includes(this.enemy.name)) return false
+    if (!['Эни', 'Сенс'].some((name) => Enemy.title?.includes(name))) return false
 
     if (!force && this.tauntCounter < 4) return false
 
@@ -5198,7 +5291,7 @@ class BattleActionStrategy {
       return
     }
 
-    const wildIsRed = document.querySelector(`#divFightH .trainerwild .wildinfo span`)?.classList.contains('rednumber') ?? false
+    const wildIsRed = () => Boolean(document.querySelector(`#divFightH .trainerwild .wildinfo span`)?.classList.contains('rednumber'))
 
     if (settings.get('surrenderTrainer') === true && document.querySelector('#divFightH .trainer')) return new SurrenderAction().execute()
 
@@ -5206,7 +5299,7 @@ class BattleActionStrategy {
       let actualKey = key
 
       if (set.has(this.enemy.name)) {
-        if (settings.get('variableShine') === 'Ловить' && (await this.isShine()) && !wildIsRed) {
+        if (settings.get('variableShine') === 'Ловить' && (await this.isShine()) && !wildIsRed()) {
           actualKey = 'Поймать'
         }
 
@@ -5236,11 +5329,11 @@ class BattleActionStrategy {
           }
 
           // Готовый дроп
-          if (settings.get('toxinEnabled') && this.enemy.name === 'Питонстр' && wildIsRed) {
+          if (settings.get('toxinEnabled') && this.enemy.name === 'Питонстр' && wildIsRed()) {
             countMonsterAll++
             return new dropSpecialAction().toxin()
           }
-          if (settings.get('spikesEnabled') && this.enemy.name === 'Пикан' && wildIsRed) {
+          if (settings.get('spikesEnabled') && this.enemy.name === 'Пикан' && wildIsRed()) {
             countMonsterAll++
             return new dropSpecialAction().spike()
           }
@@ -5766,6 +5859,8 @@ const start = (async () => {
       if (settings.get('antiBotEnable') === true) new MessageManager().execute()
 
       autoItem = new AvtoItemAction()
+
+      observer.disconnect()
     }
   })
   observer.observe(body, { attributes: true, attributeFilter: ['class'] })
@@ -6028,6 +6123,8 @@ class CreateHeal {
       },
     })
 
+    new Draggle().on({ target: this.el, handle: textTitle, isLimit: true })
+
     this.el.append(menu)
     header.append(textTitle, xMark)
     menu.append(header, separator, menuContent)
@@ -6244,12 +6341,7 @@ class AutoReklama {
   }
   waitSend() {
     const container = this.divChatWrap.querySelector('#divInputButtons .btnSend')
-    return this.observer.observe(
-      'waitAd',
-      container,
-      { attributeFilter: ['style'], attributes: true },
-      (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'style' && mutation.target.style.display !== 'none'
-    )
+    return this.observer.observe('waitAd', container, { attributeFilter: ['style'], attributes: true }, (mutation) => mutation.type === 'attributes' && mutation.attributeName === 'style' && mutation.target.style.display !== 'none')
   }
   stop() {
     this.observer.disconnect('waitAd')
